@@ -69,7 +69,7 @@ Vercel auto-detects Next.js; the export produces static output only. Any static 
 ### Using the app
 
 1. Open the app (Chrome recommended; it's installable as a PWA — after the first visit it works offline).
-2. Drop a video file, or paste a direct video URL. If a URL's host blocks cross-origin reads, the app explains why instead of failing silently — proxying through a server would defeat the product.
+2. Drop a video file, or paste a direct video URL. **[`docs/test-urls.md`](docs/test-urls.md) has 18 verified CORS-readable URLs** across categories (animation, scenery, talking heads, dance, long-form) if you'd rather not hunt for one. If a URL's host blocks cross-origin reads, the app explains why instead of failing silently — proxying through a server would defeat the product.
 3. **The player mounts hard-blurred.** Nothing legible is shown before it has been checked, not even a thumbnail. You then choose: **Pre-scan** for certainty, or **Watch with live guard** for immediacy. (Settings → *Strict: never show unscanned frames* goes further and refuses to create a video element at all until a verdict exists.)
 4. **Pre-scan** runs the cascade and renders the verdict, category breakdown, flagged-segment map, score timeline, and the JSON payload (copy button).
 5. Press play with a flagged video to see the response layer; switch modes (composite / blur / pause / hide / skip) and drag thresholds live in **Settings**. The adult override is scoped to a single detection — approving one flagged moment never disarms the guard for the rest of the video.
