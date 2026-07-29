@@ -2,6 +2,8 @@
 
 **Fully client-side video content detection.** Upload a video (or paste a URL) and a two-tier ML cascade samples and classifies frames — entirely in your browser. You get a verdict payload, a per-frame score timeline, and a live response demo (blur / pause / replace / skip) suitable for a kids-safety browser.
 
+🔗 **Live demo: [safeframe-livid.vercel.app](https://safeframe-livid.vercel.app)** — installable as a PWA; works offline after the first visit.
+
 > **There is no server.** No database, no API routes, no telemetry, no analytics, no external inference. The deploy artifact is a static export; the only network traffic at runtime is (a) the one-time Tier-2 model download on capable devices and (b) video URLs you explicitly provide. Frames never leave the device — that isn't a limitation of this prototype, it's the point: a kids-safety browser cannot ship children's screen content to a server.
 
 The full design rationale lives in [`docs/architecture-overview.md`](docs/architecture-overview.md) — pipeline, model choice, the cascade tradeoff table, response-mode analysis, limitations, and the path to production.
@@ -78,18 +80,22 @@ The Expo app runs the same `packages/core` pipeline with **native on-device ONNX
 > ⚠️ Native module (`onnxruntime-react-native`) — **Expo Go will not work.** Use a dev build or the APK flow below.
 
 ```bash
-# 1) One-time: fetch the model binary (git-ignored, ~85 MB)
-pnpm --filter @safeframe/mobile download-model
-
-# 2) Build the APK (choose one)
 cd apps/mobile
-npx eas build --platform android --profile preview --local   # needs eas-cli + Android SDK
-# — or —
+
+# Cloud build — no Android SDK needed. The model binary is fetched on the
+# build server by the eas-build-post-install hook, so nothing large is
+# committed or uploaded.
+npx eas-cli build --platform android --profile preview
+
+# — or, entirely locally (needs Android SDK + JDK 17) —
+pnpm --filter @safeframe/mobile download-model     # one-time, ~84 MB
 npx expo prebuild --platform android && cd android && ./gradlew assembleRelease
 # APK → android/app/build/outputs/apk/release/app-release.apk
 ```
 
-Install: copy the APK to the phone and open it (allow "install unknown apps"), or `adb install app-release.apk`.
+Install: download the APK from the EAS build page (or copy the local one to the phone) and open it, allowing "install unknown apps" — or `adb install app-release.apk`.
+
+For hot-reload development against the native module, build the `development` profile once (`npx eas-cli build --platform android --profile development`), install it, then run `pnpm --filter @safeframe/mobile start`.
 
 ## The API
 
