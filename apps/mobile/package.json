@@ -9,7 +9,8 @@
     "prebuild": "expo prebuild --platform android",
     "typecheck": "tsc --noEmit",
     "download-model": "node scripts/download-model.mjs",
-    "eas-build-post-install": "node scripts/download-model.mjs"
+    "patch-onnx-gradle": "node scripts/patch-onnx-gradle.mjs",
+    "eas-build-post-install": "node scripts/download-model.mjs && node scripts/patch-onnx-gradle.mjs"
   },
   "dependencies": {
     "@safeframe/core": "workspace:*",
