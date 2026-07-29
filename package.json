@@ -1,0 +1,17 @@
+{
+  "name": "safeframe",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Fully client-side video content detection — no server, no external inference.",
+  "scripts": {
+    "dev": "pnpm --filter @safeframe/web dev",
+    "build": "pnpm --filter @safeframe/web build",
+    "test": "pnpm --filter @safeframe/core test",
+    "typecheck": "pnpm -r typecheck",
+    "mobile": "pnpm --filter @safeframe/mobile start"
+  },
+  "packageManager": "pnpm@10.16.1",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

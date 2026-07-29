@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+dist/
+.expo/
+android/
+ios/
+*.tsbuildinfo
+.env*
+.vercel
+.DS_Store
+# Large model binaries are downloaded by script, never committed
+apps/mobile/assets/models/*.onnx
+# Test media never enters the repo (see docs/handoff-builder.md §9)
+*.mp4
+*.webm
+*.mkv
+*.mov
+
+# Local scan-log auto-save target (never committed)
+test-logs/

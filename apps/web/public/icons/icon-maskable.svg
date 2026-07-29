@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="oklch(0.55 0.19 262)"/>
+  <g transform="translate(256 256) scale(0.72) translate(-256 -256)">
+    <path d="M256 96l112 42v106c0 78-48 130-112 172-64-42-112-94-112-172V138z" fill="none" stroke="oklch(0.99 0.005 250)" stroke-width="34" stroke-linejoin="round"/>
+    <rect x="196" y="216" width="120" height="84" rx="14" fill="oklch(0.99 0.005 250)"/>
+    <path d="M232 240v36l30-18z" fill="oklch(0.55 0.19 262)"/>
+  </g>
+</svg>

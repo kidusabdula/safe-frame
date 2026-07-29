@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Semantic tokens (OKLCH only — no raw hex anywhere in components) ── */
+:root {
+  --background: oklch(0.985 0.004 250);
+  --foreground: oklch(0.2 0.02 258);
+  --surface: oklch(0.97 0.005 250);
+  --surface-elevated: oklch(1 0 0);
+  --surface-glass: oklch(1 0 0 / 0.72);
+  --border: oklch(0.9 0.008 250);
+  --border-strong: oklch(0.82 0.012 250);
+  --muted: oklch(0.94 0.006 250);
+  --muted-foreground: oklch(0.5 0.02 255);
+  --primary: oklch(0.55 0.19 262);
+  --primary-foreground: oklch(0.99 0.005 250);
+  --accent: oklch(0.7 0.14 200);
+  --success: oklch(0.65 0.15 155);
+  --success-soft: oklch(0.65 0.15 155 / 0.12);
+  --warning: oklch(0.75 0.15 80);
+  --warning-soft: oklch(0.75 0.15 80 / 0.14);
+  --danger: oklch(0.6 0.21 25);
+  --danger-soft: oklch(0.6 0.21 25 / 0.12);
+  --ring: oklch(0.55 0.19 262 / 0.45);
+  --chart-line: oklch(0.55 0.19 262);
+  --chart-area: oklch(0.55 0.19 262 / 0.12);
+  --chart-band: oklch(0.6 0.21 25 / 0.16);
+  --shadow-color: oklch(0.3 0.03 260 / 0.08);
+}
+
+.dark {
+  --background: oklch(0.16 0.015 260);
+  --foreground: oklch(0.93 0.008 250);
+  --surface: oklch(0.2 0.016 260);
+  --surface-elevated: oklch(0.23 0.018 260);
+  --surface-glass: oklch(0.2 0.016 260 / 0.66);
+  --border: oklch(0.29 0.02 260);
+  --border-strong: oklch(0.38 0.024 260);
+  --muted: oklch(0.26 0.018 260);
+  --muted-foreground: oklch(0.68 0.015 255);
+  --primary: oklch(0.68 0.17 262);
+  --primary-foreground: oklch(0.15 0.02 262);
+  --accent: oklch(0.75 0.13 200);
+  --success: oklch(0.72 0.15 155);
+  --success-soft: oklch(0.72 0.15 155 / 0.14);
+  --warning: oklch(0.8 0.14 80);
+  --warning-soft: oklch(0.8 0.14 80 / 0.15);
+  --danger: oklch(0.68 0.19 25);
+  --danger-soft: oklch(0.68 0.19 25 / 0.16);
+  --ring: oklch(0.68 0.17 262 / 0.5);
+  --chart-line: oklch(0.68 0.17 262);
+  --chart-area: oklch(0.68 0.17 262 / 0.14);
+  --chart-band: oklch(0.68 0.19 25 / 0.2);
+  --shadow-color: oklch(0 0 0 / 0.35);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-glass: var(--surface-glass);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ring: var(--ring);
+  --color-chart-line: var(--chart-line);
+  --color-chart-area: var(--chart-area);
+  --color-chart-band: var(--chart-band);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-card: 1rem;
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Skeleton shimmer — the loading vocabulary of the app (no spinners). */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton {
+  border-radius: 0.5rem;
+  background: linear-gradient(
+    100deg,
+    var(--muted) 40%,
+    var(--surface-elevated) 50%,
+    var(--muted) 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Glass surface used by overlays and floating panels. */
+.glass {
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid var(--border);
+}
+
+::selection {
+  background: var(--ring);
+}

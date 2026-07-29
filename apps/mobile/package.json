@@ -1,0 +1,35 @@
+{
+  "name": "@safeframe/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "prebuild": "expo prebuild --platform android",
+    "typecheck": "tsc --noEmit",
+    "download-model": "node scripts/download-model.mjs",
+    "eas-build-post-install": "node scripts/download-model.mjs"
+  },
+  "dependencies": {
+    "@safeframe/core": "workspace:*",
+    "base64-js": "^1.5.1",
+    "expo": "~57.0.8",
+    "expo-asset": "~57.0.7",
+    "expo-clipboard": "~57.0.1",
+    "expo-document-picker": "~57.0.1",
+    "expo-image-manipulator": "~57.0.6",
+    "expo-status-bar": "~57.0.1",
+    "expo-video": "~57.0.2",
+    "expo-video-thumbnails": "~57.0.1",
+    "jpeg-js": "^0.4.4",
+    "onnxruntime-react-native": "^1.24.3",
+    "react": "19.2.3",
+    "react-native": "0.86.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.2"
+  }
+}
