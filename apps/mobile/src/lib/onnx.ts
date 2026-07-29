@@ -14,8 +14,10 @@ export interface NsfwSession {
  * confined to this file. The quantized ViT ships as a bundled asset, so
  * inference works with the radio off (airplane-mode demo).
  *
- * Model outputs logits over [sfw, nsfw] (id2label order of
- * AdamCodd/vit-base-nsfw-detector); softmax index 1 is the NSFW probability.
+ * Model outputs logits over [sfw, nsfw]; softmax index 1 is the NSFW
+ * probability. Verified against the model's own config.json rather than
+ * assumed — AdamCodd/vit-base-nsfw-detector declares
+ * `id2label: {"0": "sfw", "1": "nsfw"}`.
  */
 const NSFW_LOGIT_INDEX = 1;
 
