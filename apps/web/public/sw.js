@@ -9,7 +9,7 @@
  *    Cache API bucket ("transformers-cache"), so this worker deliberately
  *    does not double-cache cross-origin model files.
  */
-const SHELL_CACHE = "safeframe-shell-v2";
+const SHELL_CACHE = "safeframe-shell-v3";
 
 const PRECACHE = [
   "/",

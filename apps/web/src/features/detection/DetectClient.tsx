@@ -11,12 +11,14 @@ import {
   Globe,
   HelpCircle,
   Play,
+  Radio,
   RotateCcw,
+  ScanEye,
   ShieldCheck,
   WifiOff,
   Zap,
 } from "lucide-react";
-import type { DetectionResult } from "@safeframe/core";
+import type { DetectionConfig, DetectionResult } from "@safeframe/core";
 import { Badge, Button, Card } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useBenchmark } from "./hooks/useBenchmark";
@@ -33,7 +35,13 @@ import { SettingsSheet } from "./components/SettingsSheet";
 import { UploadDropzone } from "./components/UploadDropzone";
 import { UrlIngest } from "./components/UrlIngest";
 import { VerdictCard, VerdictSkeleton } from "./components/VerdictCard";
-import { VideoStage, type VideoStageHandle } from "./components/VideoStage";
+import {
+  VideoStage,
+  type StageMode,
+  type VideoStageHandle,
+} from "./components/VideoStage";
+
+const round4 = (n: number): number => Math.round(n * 10000) / 10000;
 
 export function DetectClient() {
   const device = useDeviceTier();
@@ -80,6 +88,19 @@ export function DetectClient() {
         longTaskCount: benchmark.record.longTaskCount,
         memoryMb: benchmark.record.memoryMb,
       },
+      // Rounded to 4 dp: enough precision to replay the aggregation exactly,
+      // small enough that a long scan's log stays human-readable.
+      frames: engine.timeline.map((pt) => ({
+        t: round4(pt.timestamp_s),
+        p: round4(pt.p),
+        w: round4(pt.windowedScore),
+        tier2: pt.tier2Score === null ? null : round4(pt.tier2Score),
+        porn: round4(pt.categories.porn),
+        hentai: round4(pt.categories.hentai),
+        sexy: round4(pt.categories.sexy),
+        neutral: round4(pt.categories.neutral),
+        drawing: round4(pt.categories.drawing),
+      })),
     };
     void appendScanLog(entry).then(setScanLog);
   }, [engine, benchmark.record]);
@@ -90,9 +111,15 @@ export function DetectClient() {
     setCurrentTimeS(t);
   }, []);
 
-  // The pre-scan gate: live mode reveals immediately (that's its job);
-  // otherwise nothing renders until a verdict exists.
-  const revealed = engine.config.runMode === "live" || engine.result !== null;
+  // What the stage may show. Default flow mounts the player hard-blurred behind
+  // a consent gate; strict mode refuses to create a video element at all.
+  const stageMode: StageMode =
+    engine.result !== null
+      ? "verdict"
+      : engine.config.strictPreview
+        ? "strict"
+        : "unscanned";
+  const playable = stageMode !== "strict";
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-4 sm:px-6">
@@ -133,7 +160,7 @@ export function DetectClient() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Link
-            href="/#how"
+            href="/architecture"
             className="hidden min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
           >
             <HelpCircle className="size-4" /> How it works
@@ -200,8 +227,9 @@ export function DetectClient() {
                 source={engine.source}
                 segments={engine.result?.flagged_segments ?? null}
                 config={engine.config}
+                mode={stageMode}
                 onTimeChange={handleTimeChange}
-                revealed={revealed}
+                onPrescan={() => void engine.start()}
                 scanning={engine.isRunning}
               />
 
@@ -215,6 +243,10 @@ export function DetectClient() {
                     <Button variant="outline" onClick={engine.clearSource}>
                       <RotateCcw className="size-4" /> Change video
                     </Button>
+                    <RunModeToggle
+                      value={engine.config.runMode}
+                      onChange={(runMode) => engine.setConfig({ runMode })}
+                    />
                   </>
                 )}
                 <span className="ml-auto truncate text-xs text-muted-foreground">
@@ -244,10 +276,10 @@ export function DetectClient() {
                       0
                     }
                     config={engine.config}
-                    currentTimeS={revealed ? currentTimeS : undefined}
-                    onSeek={revealed ? seek : undefined}
+                    currentTimeS={playable ? currentTimeS : undefined}
+                    onSeek={playable ? seek : undefined}
                   />
-                  {engine.result && revealed && (
+                  {engine.result && playable && (
                     <div className="mt-3 border-t border-border pt-3">
                       <SegmentNav
                         segments={engine.result.flagged_segments}
@@ -304,6 +336,56 @@ export function DetectClient() {
         No server · no database · no telemetry — detection runs entirely on
         this device, from low-end to high-end hardware.
       </footer>
+    </div>
+  );
+}
+
+/**
+ * Run mode belongs on the stage, not buried in a settings drawer. Hiding it
+ * there made the live guard look broken on the deployed build: the default is
+ * pre-scan, so a user who never opened Settings only ever saw the gate.
+ */
+function RunModeToggle({
+  value,
+  onChange,
+}: {
+  value: DetectionConfig["runMode"];
+  onChange: (mode: DetectionConfig["runMode"]) => void;
+}) {
+  const modes: Array<{
+    value: DetectionConfig["runMode"];
+    label: string;
+    icon: typeof ScanEye;
+  }> = [
+    { value: "prescan", label: "Pre-scan", icon: ScanEye },
+    { value: "live", label: "Live guard", icon: Radio },
+  ];
+  return (
+    <div
+      role="group"
+      aria-label="Run mode"
+      className="flex items-center gap-1 rounded-xl border border-border bg-surface p-1"
+    >
+      {modes.map((mode) => {
+        const Icon = mode.icon;
+        const active = value === mode.value;
+        return (
+          <button
+            key={mode.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(mode.value)}
+            className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-colors ${
+              active
+                ? "bg-surface-elevated text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon className="size-3.5" />
+            {mode.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

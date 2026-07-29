@@ -14,6 +14,40 @@ export function combineClassScores(
   return clamp01(p);
 }
 
+/**
+ * Combine the two tiers' opinions for one escalated frame.
+ *
+ * Tier 2 exists to *verify* borderline frames, not to overrule them. An earlier
+ * build simply assigned `p = tier2Score`, which handed the ViT a unilateral
+ * veto: frames whose Tier-1 score sat inside the escalation band were replaced
+ * by a lower Tier-2 value and dropped under the flag line, so videos containing
+ * real explicit footage came back clean. (Frames scoring above `borderlineHigh`
+ * never escalate, which is why the same content flagged correctly whenever
+ * Tier 1 happened to be confident — the false negatives tracked escalation
+ * count exactly.) Two clauses fix it:
+ *
+ * 1. Blend rather than replace, so neither tier can erase the other.
+ * 2. Floor the result at Tier-1's `porn` score. That is the one unambiguous,
+ *    photographic, full-weight class: Tier 2 may overrule "this looks
+ *    suggestive", but it may not overrule "this is explicit".
+ *
+ * `sexy` is excluded from the floor so swimwear still cannot flag on its own,
+ * and `hentai` is excluded because NSFWJS assigns cartoons high hentai/drawing
+ * scores — flooring on it would resurrect the Big Buck Bunny false positive.
+ * `hentai` keeps full weight inside combineClassScores, so confident animated
+ * content still flags through the no-escalation path.
+ */
+export function fuseTierScores(
+  tier1Score: number,
+  tier2Score: number,
+  scores: CategoryScores,
+  config: Pick<DetectionConfig, "tier2Weight">,
+): number {
+  const w = config.tier2Weight;
+  const blend = w * tier2Score + (1 - w) * tier1Score;
+  return clamp01(Math.max(blend, scores.porn));
+}
+
 export type VerdictZone = "safe" | "borderline" | "flagged";
 
 /**

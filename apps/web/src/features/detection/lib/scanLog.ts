@@ -23,6 +23,24 @@ export interface ScanBenchmarkSnapshot {
   memoryMb: number | null;
 }
 
+/**
+ * One classified frame, as written to the folder copy. This is the raw material
+ * for offline replay: with the Tier-1 distribution and the raw Tier-2
+ * probability per frame, thresholds and fusion weights can be re-evaluated
+ * against a real scan instead of being guessed from aggregate maxima.
+ */
+export interface ScanFrame {
+  t: number;
+  p: number;
+  w: number;
+  tier2: number | null;
+  porn: number;
+  hentai: number;
+  sexy: number;
+  neutral: number;
+  drawing: number;
+}
+
 export interface ScanLogEntry {
   id: string;
   at: string; // ISO timestamp
@@ -31,6 +49,12 @@ export interface ScanLogEntry {
   config: DetectionConfig;
   result: DetectionResult;
   benchmark: ScanBenchmarkSnapshot;
+  /**
+   * Per-frame detail. Written to the folder copy only — the localStorage ring
+   * buffer drops it, since 50 scans × hundreds of frames would compete with the
+   * 5 MB quota for no benefit to the in-app panel.
+   */
+  frames?: ScanFrame[];
 }
 
 const STORAGE_KEY = "safeframe.scanlog.v1";
@@ -51,7 +75,8 @@ export function readScanLog(): ScanLogEntry[] {
 }
 
 export async function appendScanLog(entry: ScanLogEntry): Promise<ScanLogEntry[]> {
-  const entries = [entry, ...readScanLog()].slice(0, MAX_ENTRIES);
+  const { frames: _frames, ...slim } = entry;
+  const entries = [slim, ...readScanLog()].slice(0, MAX_ENTRIES);
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   } catch {

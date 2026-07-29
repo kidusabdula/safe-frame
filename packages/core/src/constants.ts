@@ -18,6 +18,9 @@ export type Tier1Class = (typeof TIER1_CLASSES)[number];
 /** Model input side (both tiers are 224×224 RGB). */
 export const MODEL_INPUT_SIZE = 224;
 
-/** Cache API bucket used by the service worker for model weights. */
-export const MODEL_CACHE_NAME = "safeframe-models-v1";
-export const SHELL_CACHE_NAME = "safeframe-shell-v1";
+/**
+ * Cache API bucket that Transformers.js uses for the Tier-2 weights. Named here
+ * for documentation only — the service worker deliberately does NOT touch it, so
+ * that a shell-cache version bump never evicts an 84 MB model download.
+ */
+export const TIER2_RUNTIME_CACHE_NAME = "transformers-cache";

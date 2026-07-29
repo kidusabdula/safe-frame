@@ -27,11 +27,13 @@ safe-frame/
 │       ├── workers/       # Tier-2 ONNX ViT in a Web Worker
 │       ├── hooks/         # useDetectionEngine reducer state machine, live guard
 │       └── components/    # dropzone, timeline, verdict, overlay, settings…
-└── apps/mobile            # Expo + onnxruntime-react-native (native path)
-    └── src/               # same core pipeline, bundled int8 ViT, offline-capable
+├── apps/mobile            # Expo + onnxruntime-react-native (native path)
+│   └── src/               # same core pipeline, bundled int8 ViT, offline-capable
+└── apps/extension         # Manifest V3 live guard for any <video> on any site
+    └── src/               # content script + hidden inference frame
 ```
 
-Both apps consume `@safeframe/core` — the payload schema, scoring, aggregation, and tier policy exist exactly once, so web and mobile *cannot* drift apart.
+All three apps consume `@safeframe/core` — the payload schema, scoring, aggregation, and tier policy exist exactly once, so they *cannot* drift apart. Core is pure TypeScript with no DOM, React or React Native import, which is precisely why a content script can reuse it unchanged.
 
 ## Quick start (web)
 
@@ -68,10 +70,22 @@ Vercel auto-detects Next.js; the export produces static output only. Any static 
 
 1. Open the app (Chrome recommended; it's installable as a PWA — after the first visit it works offline).
 2. Drop a video file, or paste a direct video URL. If a URL's host blocks cross-origin reads, the app explains why instead of failing silently — proxying through a server would defeat the product.
-3. **Pre-scan** runs the cascade and renders the verdict, category breakdown, flagged-segment map, score timeline, and the JSON payload (copy button).
-4. Press play with a flagged video to see the response layer; switch modes (composite / blur / pause / hide / skip) and drag thresholds live in **Settings**.
-5. **Live guard** mode (Settings → Run mode) scores frames during playback instead — the way an embedded browser engine would run it.
-6. The **benchmark panel** shows the resolved device tier, chosen backend, model load times, throughput, and frame-latency percentiles — measured on your device, never estimated.
+3. **The player mounts hard-blurred.** Nothing legible is shown before it has been checked, not even a thumbnail. You then choose: **Pre-scan** for certainty, or **Watch with live guard** for immediacy. (Settings → *Strict: never show unscanned frames* goes further and refuses to create a video element at all until a verdict exists.)
+4. **Pre-scan** runs the cascade and renders the verdict, category breakdown, flagged-segment map, score timeline, and the JSON payload (copy button).
+5. Press play with a flagged video to see the response layer; switch modes (composite / blur / pause / hide / skip) and drag thresholds live in **Settings**. The adult override is scoped to a single detection — approving one flagged moment never disarms the guard for the rest of the video.
+6. **Live guard** (the toggle next to *Pre-scan video*) scores frames during playback instead — the way an embedded browser engine would run it. It is Tier-1 only by design: latency over accuracy.
+7. The **benchmark panel** shows the resolved device tier, chosen backend, model load times, throughput, and frame-latency percentiles — measured on your device, never estimated.
+8. `/architecture` is a full interactive walkthrough of the design, including a widget that runs the real scoring code.
+
+### Tuning against captured scans (no re-testing by hand)
+
+The scan log can auto-save every result — including **per-frame class scores and the raw Tier-2 probability** — as JSON to a folder you pick (Chromium; File System Access API, entirely local). Point it at the git-ignored `test-logs/`, then replay those scans offline under different thresholds:
+
+```bash
+SAFEFRAME_LOGS=./test-logs pnpm --filter @safeframe/core test replay
+```
+
+It re-derives each frame's score from the stored class distribution, so `tier2Weight`, `flagThreshold`, `sexyWeight` and the evidence parameters can all be swept without a browser, a model, or the original video. It skips silently when no logs are present.
 
 ## Mobile app
 
@@ -96,6 +110,31 @@ npx expo prebuild --platform android && cd android && ./gradlew assembleRelease
 Install: download the APK from the EAS build page (or copy the local one to the phone) and open it, allowing "install unknown apps" — or `adb install app-release.apk`.
 
 For hot-reload development against the native module, build the `development` profile once (`npx eas-cli build --platform android --profile development`), install it, then run `pnpm --filter @safeframe/mobile start`.
+
+## Browser extension
+
+Asking a user to upload a file is a demo affordance. The product shape is *guard whatever is already playing* — which is what `apps/extension` does: a Manifest V3 content script that finds every `<video>` on any site, samples it, and blurs + pauses + explains on a detection. Same `@safeframe/core`, third consumer, unchanged.
+
+```bash
+pnpm --filter @safeframe/extension build     # → apps/extension/dist
+```
+
+Then in Chrome or Edge: `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select `apps/extension/dist`. Open any page with a video; the guard attaches automatically.
+
+**Design notes**
+
+- Inference runs in a **hidden extension-page iframe**, not an MV3 offscreen document. Offscreen documents are reached via `chrome.runtime` messaging, which is **JSON-serialized** — a 224×224×4 pixel buffer would become a ~200 000-element JSON array per sampled frame. `postMessage` to an iframe uses structured clone, so the `ArrayBuffer` transfers zero-copy. The iframe also inherits the *extension's* CSP (`'wasm-unsafe-eval'`), so the ML runtime loads on sites whose own CSP would refuse it.
+- The build drops NSFWJS's unused Inception-V3 and MobileNetV2-Mid weights, which IIFE bundling would otherwise inline: **39 MB → 4.5 MB**. The content script deep-imports core's pure modules to keep Zod out of a script injected on every page: **330 KB → 8 KB**.
+
+**Honest limits**
+
+| Limit | Detail |
+|---|---|
+| Reactive, not preemptive | A detection lands within one ~400 ms sample interval, so a flagged frame is briefly visible. Zero exposure needs a full-file pre-scan, which streaming does not allow. |
+| DRM / EME video | Reads back as black frames by design — no client-side detector can inspect it. The guard detects the all-black case and says so rather than reporting everything safe. |
+| Chrome for Android | No extension support at all. Firefox Android and Safari iOS (via an app wrapper) do support Web Extensions. |
+
+The real conclusion is in [`docs/architecture-overview.md` §12](docs/architecture-overview.md): a kids-safety browser *is* the WebView host, so this belongs in the browser shell as a native content-guard module. The extension proves the core is portable enough to go there.
 
 ## The API
 

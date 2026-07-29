@@ -27,6 +27,12 @@ export function VerdictCard({
   onSeek?: (timeS: number) => void;
 }) {
   const flagged = result.contains_inappropriate_content;
+  // Full-weight classes only: a high `sexy` peak on a clean verdict is the
+  // ×0.4 weighting working as designed and needs no explanation.
+  const peakFullWeight = Math.max(
+    result.categories.porn,
+    result.categories.hentai,
+  );
   return (
     <Card className="overflow-hidden">
       <motion.div
@@ -99,13 +105,25 @@ export function VerdictCard({
           </div>
         </div>
 
+        {/* Why a high category peak can still be a clean verdict. Without
+            this, a reviewer reads "porn 65%" next to "no content found" as a
+            contradiction rather than as smoothing working correctly. */}
+        {!flagged && peakFullWeight >= 0.5 && (
+          <p className="rounded-xl bg-muted px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+            One or more frames scored high on a full-weight category, but no run
+            of frames stayed above the threshold long enough to flag. A verdict
+            needs sustained evidence — a single frame is treated as decode noise,
+            not as content.
+          </p>
+        )}
+
         {/* Category breakdown */}
         <div className="space-y-2">
           <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Category peaks
+            Tier-1 screener peaks
             <InfoTip
               wide
-              text="Each value is the highest score any single frame reached during the scan — peak exposure, not an average across the video."
+              text="The highest score any single frame reached during the scan, as reported by the Tier-1 screener — peak exposure, not an average, and not the same number as the confidence above. Confidence comes from the smoothed, Tier-2-verified score over time, which is why a high peak here can still be a clean verdict."
             />
           </p>
           {CATEGORY_ORDER.map((key, i) => (
@@ -140,7 +158,7 @@ export function VerdictCard({
               Flagged segments
               <InfoTip
                 wide
-                text="Time ranges where the smoothed score stayed above the flag threshold. Tap one to jump the player to it."
+                text="Time ranges flagged either by the smoothed score holding above the threshold, or by a sustained run of raw over-threshold frames that smoothing would otherwise damp away. Tap one to jump the player to it."
               />
             </p>
             <div className="space-y-1.5">

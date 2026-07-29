@@ -2,7 +2,9 @@ import {
   combineClassScores,
   createAggregator,
   frameVerdictZone,
+  fuseTierScores,
   DetectionResultSchema,
+  type CategoryScores,
   type DetectionConfig,
   type DetectionResult,
   type DeviceTier,
@@ -21,6 +23,14 @@ export interface TimelinePoint {
   zone: VerdictZone;
   tier2Used: boolean;
   latency_ms: number;
+  /**
+   * Tier-1 class distribution and the raw Tier-2 probability (null when the
+   * frame never escalated). Kept per frame so a completed scan can be replayed
+   * offline under different thresholds and fusion weights — tuning the cascade
+   * from aggregate maxima alone is guesswork.
+   */
+  categories: CategoryScores;
+  tier2Score: number | null;
 }
 
 export interface DetectionProgress {
@@ -128,6 +138,7 @@ export async function runDetection(
     let p = combineClassScores(categories, config.sexyWeight);
     const zone = frameVerdictZone(p, config);
     let tier2Used = false;
+    let tier2Score: number | null = null;
 
     // The cascade: borderline frames get the accurate (expensive) opinion —
     // if the device tier allows it and the per-video budget isn't spent.
@@ -139,7 +150,10 @@ export async function runDetection(
     ) {
       throwIfAborted();
       try {
-        p = await deps.tier2.classify(image);
+        tier2Score = await deps.tier2.classify(image);
+        // Arbitration, not replacement: Tier 2 dominates the blend but cannot
+        // veto Tier 1's explicit-class evidence. See fuseTierScores.
+        p = fuseTierScores(p, tier2Score, categories, config);
         tier2Used = true;
         tier2Escalations++;
       } catch {
@@ -167,6 +181,8 @@ export async function runDetection(
       zone,
       tier2Used,
       latency_ms: latency,
+      categories,
+      tier2Score,
     });
 
     // Densify around anything that isn't clearly safe so short flashes

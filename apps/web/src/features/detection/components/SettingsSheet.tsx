@@ -162,6 +162,25 @@ export function SettingsSheet({ config, setConfig, device }: SettingsSheetProps)
                   Pre-scan analyzes before playback (high assurance). Live guard
                   scores during playback, the way a browser engine would.
                 </p>
+
+                <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 accent-current"
+                    checked={config.strictPreview}
+                    onChange={(e) => setConfig({ strictPreview: e.target.checked })}
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">
+                      Strict: never show unscanned frames
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      Creates no video element until a verdict exists, so not even
+                      a blurred thumbnail is decoded. Off by default — the normal
+                      flow blurs the player behind a consent gate instead.
+                    </span>
+                  </span>
+                </label>
               </fieldset>
 
               <fieldset className="space-y-2.5">

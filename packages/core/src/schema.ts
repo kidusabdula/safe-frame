@@ -47,6 +47,16 @@ export const DetectionConfigSchema = z.object({
   borderlineLow: z.number().default(0.35),
   borderlineHigh: z.number().default(0.75),
   sexyWeight: z.number().default(0.4),
+  /**
+   * How much Tier 2's opinion counts when it arbitrates a borderline frame.
+   * Tier 2 dominates the blend (it is the accurate model) but never replaces
+   * Tier 1 outright — see fuseTierScores for why that distinction matters.
+   */
+  tier2Weight: z.number().min(0).max(1).default(0.65),
+  /** Sustained-evidence path: min seconds of consecutive over-threshold frames. */
+  minEvidenceS: z.number().default(1.5),
+  /** Sustained-evidence path: min consecutive over-threshold frames. */
+  minEvidenceFrames: z.number().int().default(3),
   samplingFps: z.number().default(1),
   densifyFps: z.number().default(2),
   densifyWindowS: z.number().default(2),
@@ -55,6 +65,13 @@ export const DetectionConfigSchema = z.object({
   minFramesForVerdict: z.number().int().default(5),
   responseMode: z.enum(["composite", "blur", "pause", "hide", "skip"]).default("composite"),
   runMode: z.enum(["prescan", "live"]).default("prescan"),
+  /**
+   * Strict mode: mount no <video> at all until a verdict exists, so not even a
+   * blurred first frame of unvetted content is decoded to screen. Off by
+   * default — the default flow mounts the player hard-blurred behind a consent
+   * gate, which is friendlier and still never shows a legible unchecked frame.
+   */
+  strictPreview: z.boolean().default(false),
 });
 export type DetectionConfig = z.infer<typeof DetectionConfigSchema>;
 

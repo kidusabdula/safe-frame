@@ -130,6 +130,135 @@ describe("aggregator — densification ordering", () => {
   });
 });
 
+/**
+ * Regression suite for the false negative found in live testing on 2026-07-30:
+ * a 37.7 s clip with two short explicit inserts between scenery returned
+ * `contains_inappropriate_content: false` with zero segments, because the
+ * verdict depended entirely on the smoothed score crossing flagThreshold.
+ *
+ * The shape below mirrors composite-demo.mp4's ground truth exactly (scenery /
+ * bikini / scenery / explicit / scenery / explicit / scenery) sampled at the
+ * ~1.65 fps the real run produced. Scores are numbers only — no media, no
+ * fixtures.
+ */
+describe("aggregator — composite ground truth", () => {
+  const STEP = 0.6;
+  interface Span {
+    fromS: number;
+    toS: number;
+    p: number;
+    kind: "scenery" | "bikini" | "explicit";
+  }
+  const SPANS: Span[] = [
+    { fromS: 0, toS: 8, p: 0.05, kind: "scenery" },
+    // Swimwear: sexy 0.89 × 0.4 ⇒ p well under the flag line by construction.
+    { fromS: 8, toS: 10.7, p: 0.46, kind: "bikini" },
+    { fromS: 10.7, toS: 16.7, p: 0.05, kind: "scenery" },
+    // Post-fusion value for a re-encoded explicit frame: Tier-1 ≈ 0.7 blended
+    // with Tier-2 ≈ 0.6, floored at porn 0.647.
+    { fromS: 16.7, toS: 21.7, p: 0.66, kind: "explicit" },
+    { fromS: 21.7, toS: 25.7, p: 0.05, kind: "scenery" },
+    { fromS: 25.7, toS: 29.7, p: 0.66, kind: "explicit" },
+    { fromS: 29.7, toS: 37.7, p: 0.05, kind: "scenery" },
+  ];
+
+  function buildComposite() {
+    const agg = createAggregator(config);
+    for (const span of SPANS) {
+      for (let t = span.fromS; t < span.toS; t += STEP) {
+        const categories =
+          span.kind === "explicit"
+            ? cat({ porn: 0.647, sexy: 0.6, neutral: 0.1 })
+            : span.kind === "bikini"
+              ? cat({ sexy: 0.89, porn: 0.1, neutral: 0.4 })
+              : cat();
+        agg.push({ timestamp_s: Number(t.toFixed(3)), p: span.p, categories });
+      }
+    }
+    return agg.finalize();
+  }
+
+  it("flags the video and reports one segment per explicit insert", () => {
+    const out = buildComposite();
+    expect(out.contains_inappropriate_content).toBe(true);
+    expect(out.flagged_segments).toHaveLength(2);
+  });
+
+  it("places the segments on the explicit windows, not the bikini bump", () => {
+    const out = buildComposite();
+    const [first, second] = out.flagged_segments;
+    expect(first!.start_s).toBeGreaterThanOrEqual(15);
+    expect(first!.start_s).toBeLessThanOrEqual(18);
+    expect(first!.end_s).toBeLessThanOrEqual(23);
+    expect(second!.start_s).toBeGreaterThanOrEqual(24);
+    expect(second!.start_s).toBeLessThanOrEqual(27);
+    // Nothing may overlap the swimwear span at 8.0–10.7 s.
+    for (const seg of out.flagged_segments) {
+      expect(seg.start_s >= 10.7 || seg.end_s <= 8).toBe(true);
+    }
+  });
+
+  it("reports a confidence at or above the flag threshold when flagged", () => {
+    const out = buildComposite();
+    // The bug on screen was "detected" next to a sub-threshold confidence.
+    expect(out.confidence).toBeGreaterThanOrEqual(config.flagThreshold);
+  });
+
+  it("attributes the segments to porn, not the higher raw sexy score", () => {
+    const out = buildComposite();
+    for (const seg of out.flagged_segments) {
+      expect(seg.dominant_category).toBe("porn");
+    }
+  });
+});
+
+describe("aggregator — sustained-evidence path", () => {
+  it("flags a short run the smoother alone would damp away", () => {
+    const agg = createAggregator(config);
+    for (let t = 0; t < 20; t++) agg.push(sample(t, 0.02));
+    // Three consecutive over-threshold frames: the EWMA peaks around 0.57,
+    // below flagThreshold, so hysteresis never opens. Raw evidence must.
+    for (let t = 20; t < 23; t++) agg.push(sample(t, 0.8));
+    for (let t = 23; t < 40; t++) agg.push(sample(t, 0.02));
+    const out = agg.finalize();
+    expect(out.contains_inappropriate_content).toBe(true);
+    expect(out.flagged_segments).toHaveLength(1);
+    expect(out.flagged_segments[0]!.start_s).toBe(20);
+    expect(out.flagged_segments[0]!.peak_score).toBeCloseTo(0.8, 5);
+  });
+
+  it("does not double-count a run the hysteresis pass already covered", () => {
+    const agg = createAggregator(config);
+    for (let t = 0; t < 5; t++) agg.push(sample(t, 0.02));
+    for (let t = 5; t < 25; t++) agg.push(sample(t, 0.95));
+    for (let t = 25; t < 35; t++) agg.push(sample(t, 0.02));
+    const out = agg.finalize();
+    expect(out.flagged_segments).toHaveLength(1);
+  });
+
+  it("ignores a run too short to rule out decode noise", () => {
+    const agg = createAggregator(config);
+    for (let t = 0; t < 20; t++) agg.push(sample(t, 0.02));
+    // Two frames — under both minEvidenceFrames (3) and minEvidenceS (1.5 s).
+    for (let t = 20; t < 22; t++) agg.push(sample(t, 0.9));
+    for (let t = 22; t < 40; t++) agg.push(sample(t, 0.02));
+    const out = agg.finalize();
+    expect(out.contains_inappropriate_content).toBe(false);
+    expect(out.flagged_segments).toHaveLength(0);
+  });
+
+  it("qualifies a sparse run by elapsed span when frame count is low", () => {
+    const agg = createAggregator(config);
+    for (let t = 0; t < 10; t++) agg.push(sample(t, 0.02));
+    // Only 2 frames, but 2 s apart — spans minEvidenceS.
+    agg.push(sample(10, 0.9));
+    agg.push(sample(12, 0.9));
+    for (let t = 14; t < 30; t++) agg.push(sample(t, 0.02));
+    const out = agg.finalize();
+    expect(out.contains_inappropriate_content).toBe(true);
+  });
+});
+
 describe("aggregator — processing stats", () => {
   it("computes avg/p95 latency and tier-2 escalation count", () => {
     const agg = createAggregator(config);

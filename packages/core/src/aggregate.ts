@@ -129,6 +129,83 @@ export function computeSegments(
   return { segments, peakWindowed };
 }
 
+/** A run of consecutive frames whose raw score held above the flag threshold. */
+export interface EvidenceRun {
+  startS: number;
+  endS: number;
+  frames: number;
+  peak: number;
+  peakCategories: CategoryScores;
+}
+
+/**
+ * The sustained-evidence pass — the second, independent path to a positive
+ * verdict.
+ *
+ * The hysteresis builder above works on the *smoothed* score, which is the
+ * right instrument for drawing segment boundaries: it ignores single-frame
+ * spikes. But it made the verdict itself fragile. A short explicit insert
+ * surrounded by safe footage gets damped by the 5-sample EWMA and never
+ * crosses `flagThreshold`, so a video that plainly contains explicit content
+ * reported clean with zero segments (observed live: peak windowed 0.578 against
+ * a 0.60 threshold, while raw frames sat well above it).
+ *
+ * So we also look at the raw series: a run of consecutive frames above the flag
+ * threshold is evidence in its own right once it is long enough to rule out
+ * decode noise — `minEvidenceFrames` frames or `minEvidenceS` seconds. Runs are
+ * returned in time order; every qualifying run becomes a segment, so a video
+ * with two separate explicit inserts reports two of them.
+ */
+export function computeEvidenceRuns(
+  sorted: readonly FrameSample[],
+  config: DetectionConfig,
+): EvidenceRun[] {
+  const runs: EvidenceRun[] = [];
+  let current: EvidenceRun | null = null;
+
+  const close = (): void => {
+    if (current === null) return;
+    const spanS = current.endS - current.startS;
+    if (
+      current.frames >= config.minEvidenceFrames ||
+      spanS >= config.minEvidenceS
+    ) {
+      runs.push(current);
+    }
+    current = null;
+  };
+
+  for (const s of sorted) {
+    if (s.p < config.flagThreshold) {
+      close();
+      continue;
+    }
+    if (current === null) {
+      current = {
+        startS: s.timestamp_s,
+        endS: s.timestamp_s,
+        frames: 1,
+        peak: s.p,
+        peakCategories: s.categories,
+      };
+      continue;
+    }
+    current.endS = s.timestamp_s;
+    current.frames += 1;
+    if (s.p > current.peak) {
+      current.peak = s.p;
+      current.peakCategories = s.categories;
+    }
+  }
+  close();
+
+  return runs;
+}
+
+function overlaps(run: EvidenceRun, segment: FlaggedSegment): boolean {
+  return run.startS <= segment.end_s && run.endS >= segment.start_s;
+}
+
 function percentile(sortedAsc: readonly number[], q: number): number {
   if (sortedAsc.length === 0) return 0;
   const idx = Math.min(
@@ -167,6 +244,29 @@ export function createAggregator(config: DetectionConfig): Aggregator {
       const sorted = [...all].sort((a, b) => a.timestamp_s - b.timestamp_s);
       const { segments, peakWindowed } = computeSegments(sorted, config);
 
+      // Second path to a verdict (see computeEvidenceRuns): any qualifying run
+      // of raw over-threshold frames that the smoother missed becomes a segment
+      // of its own, so the verdict, the segment list and the timeline can never
+      // contradict each other on screen.
+      const runs = computeEvidenceRuns(sorted, config);
+      const synthesized = runs
+        .filter((run) => !segments.some((seg) => overlaps(run, seg)))
+        .map(
+          (run): FlaggedSegment => ({
+            start_s: run.startS,
+            end_s: Math.max(run.endS, run.startS),
+            peak_score: clamp01(run.peak),
+            dominant_category: dominantSexualCategory(
+              run.peakCategories,
+              config.sexyWeight,
+            ),
+          }),
+        );
+      const allSegments = [...segments, ...synthesized].sort(
+        (a, b) => a.start_s - b.start_s,
+      );
+      const evidencePeak = runs.reduce((m, run) => Math.max(m, run.peak), 0);
+
       const categories: CategoryScores = { ...ZERO_CATEGORIES };
       for (const s of sorted) {
         categories.porn = Math.max(categories.porn, s.categories.porn);
@@ -183,7 +283,10 @@ export function createAggregator(config: DetectionConfig): Aggregator {
         frames >= config.minFramesForVerdict
           ? 1
           : frames / config.minFramesForVerdict;
-      const confidence = clamp01(peakWindowed * guard);
+      // Report the stronger of the two signals. Without this a flagged video
+      // could show a confidence below its own flag threshold — the smoothed
+      // peak — which reads as a contradiction next to the category peaks.
+      const confidence = clamp01(Math.max(peakWindowed, evidencePeak) * guard);
 
       const latencies = sorted
         .map((s) => s.latency_ms)
@@ -195,10 +298,10 @@ export function createAggregator(config: DetectionConfig): Aggregator {
           : latencies.reduce((a, b) => a + b, 0) / latencies.length;
 
       return {
-        contains_inappropriate_content: segments.length > 0,
+        contains_inappropriate_content: allSegments.length > 0,
         confidence,
         categories,
-        flagged_segments: segments,
+        flagged_segments: allSegments,
         frames_analyzed: frames,
         avg_frame_latency_ms: avg,
         p95_frame_latency_ms: percentile(latencies, 0.95),

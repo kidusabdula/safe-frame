@@ -12,6 +12,11 @@ import { loadTier1 } from "../lib/tier1";
 interface LiveGuardState {
   guardActive: boolean;
   lastScore: number;
+  /**
+   * True only once a frame has actually been classified — not merely when the
+   * model finished loading. The stage gates its baseline blur on this, and a
+   * guard that has scored nothing yet is not protection.
+   */
   ready: boolean;
 }
 
@@ -94,9 +99,9 @@ export function useLiveGuard(
     } else {
       video.addEventListener("timeupdate", classifyCurrent);
     }
-    void loadTier1().then(() => {
-      if (!disposed) setState((s) => ({ ...s, ready: true }));
-    });
+    // Warm the model up front so the first scored frame isn't also paying the
+    // load cost. `ready` still waits for a real classification.
+    void loadTier1();
 
     return () => {
       disposed = true;

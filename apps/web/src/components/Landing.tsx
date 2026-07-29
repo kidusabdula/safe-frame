@@ -61,6 +61,12 @@ export function Landing() {
         </div>
         <div className="flex items-center gap-2">
           <Link
+            href="/architecture"
+            className="hidden min-h-11 items-center rounded-xl px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+          >
+            Architecture
+          </Link>
+          <Link
             href="/detect"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
@@ -86,12 +92,18 @@ export function Landing() {
               high-end desktops. Because a kids-safety product should never ship
               a child&apos;s screen to a server.
             </p>
-            <div className="flex items-center justify-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Link
                 href="/detect"
                 className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
               >
                 Try it on a video <ArrowRight className="size-4" />
+              </Link>
+              <Link
+                href="/architecture"
+                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-surface px-6 text-sm font-semibold text-foreground transition-colors hover:border-border-strong"
+              >
+                How it works
               </Link>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
