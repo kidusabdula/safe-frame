@@ -171,8 +171,9 @@ export function ArchitectureClient() {
               megabytes. A multimodal LLM can also answer the question, but the
               smallest usable vision-language models are hundreds of megabytes to
               gigabytes, take seconds per frame on a phone, and drain a battery
-              doing it. Against the constraints that actually matter here — compute,
-              memory, battery, device variability — they lose on every one.
+              doing it. Against the constraints that actually matter here —
+              compute, memory, battery, device variability — they lose on every
+              one.
             </P>
             <P>
               There is a second, quieter reason. A classifier returns a

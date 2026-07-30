@@ -19,3 +19,6 @@ apps/mobile/assets/models/*.onnx
 
 # Local scan-log auto-save target (never committed)
 test-logs/
+
+# Local working notes — not part of the published repo
+docs/
