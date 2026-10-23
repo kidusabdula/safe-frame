@@ -11,7 +11,7 @@ ios/
 .DS_Store
 # Large model binaries are downloaded by script, never committed
 apps/mobile/assets/models/*.onnx
-# Test media never enters the repo (see docs/handoff-builder.md §9)
+# Test media never enters the repo
 *.mp4
 *.webm
 *.mkv

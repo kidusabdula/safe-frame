@@ -4,7 +4,7 @@ import type { CategoryScores, DetectionConfig } from "./schema";
  * Combine per-class scores into the single inappropriate score `p`.
  * Porn + Hentai contribute at full weight; Sexy is down-weighted so
  * swimwear-type content contributes but cannot flag a video alone at
- * default thresholds (architecture-doc §4).
+ * default thresholds.
  */
 export function combineClassScores(
   scores: CategoryScores,

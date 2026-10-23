@@ -11,11 +11,11 @@ export interface DeviceSignals {
 }
 
 /**
- * Pure device-tier decision (architecture-doc §4). Each app gathers the raw
+ * Pure device-tier decision. Each app gathers the raw
  * signals; this function owns the policy so web and mobile cannot diverge.
  *
  * low  → Tier 1 only, 0.5 fps — the ~90 MB Tier-2 model is never downloaded.
- * mid  → full cascade on WASM, capped escalation budget.
+ * mid  → full cascade (Tier 2 on WebGPU if present, else WASM), standard budget.
  * high → full cascade, WebGPU Tier 2.
  */
 export function resolveTier(signals: DeviceSignals): DeviceTier {

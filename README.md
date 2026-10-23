@@ -129,7 +129,7 @@ Every sampled frame is scored by Tier 1. That score routes the frame:
 
 `p = clamp01(porn + hentai + sexy × 0.4)`. The ×0.4 weight is a deliberate policy choice, not a tuned constant: it makes it arithmetically impossible for swimwear alone to cross the flag threshold at default settings, which is the most common false positive in this domain.
 
-The escalation band *is* the design. Narrow it and you have a single-model system; widen it to everything and you've paid for an ensemble. The point is to spend the expensive model only where it changes the answer — typically well under a fifth of frames.
+The escalation band *is* the design. Narrow it and you have a single-model system; widen it to everything and you've paid for an ensemble. The point is to spend the expensive model only where it changes the answer.
 
 #### Tier 2 arbitrates; it does not overwrite
 
@@ -182,9 +182,9 @@ Static hints only *propose* a tier; a live 5-frame micro-benchmark on the actual
 
 | Tier | Signals | Sampling | Cascade | Bytes over the wire |
 |---|---|---|---|---|
-| **High** | WebGPU present, ≥8 GB, fast bench | 1–2 fps + densify | Tier 1 + Tier 2 on WebGPU | ~4 MB now, ViT lazily on first borderline frame |
-| **Mid** | No WebGPU, ≥4 GB | 1 fps + densify | Tier 1 + Tier 2 on WASM, budget capped | ~4 MB now, ViT only if genuinely needed |
-| **Low** | <4 GB, slow bench | 0.5 fps + densify | **Tier 1 only** | ~4 MB, total, ever |
+| **High** | WebGPU present, ≥8 GB, fast bench | 1 fps + densify | Tier 1 + Tier 2 on WebGPU | ~4 MB now, ViT lazily on first borderline frame |
+| **Mid** | Anything not High or Low (no WebGPU, <8 GB, or bench >50 ms) | 1 fps + densify | Tier 1 + Tier 2 (WebGPU if present, else WASM), same 40-frame budget | ~4 MB now, ViT only if genuinely needed |
+| **Low** | <4 GB, ≤2 cores, or bench >150 ms | 0.5 fps + densify | **Tier 1 only** | ~4 MB, total, ever |
 
 One build serves low-end and high-end hardware alike, degrading accuracy gracefully instead of degrading responsiveness.
 
@@ -287,7 +287,7 @@ It resolves to a `DetectionResult`, validated against the shared Zod schema. `co
 
 The shape is defined once as a Zod schema in shared code, and the UI, the mobile app and the extension all derive from it — the payload physically cannot drift between platforms.
 
-## Deliberate design decisions
+## Deliberate Design Decisions
 
 - **No TanStack Query / Redux.** There is no server state anywhere in this product; the processing lifecycle is a local reducer state machine (`useDetectionEngine`). A server-cache library would be cargo culting.
 - **No auth / roles.** Nothing to protect: no accounts, no data leaves the device, no server exists.
@@ -298,21 +298,9 @@ The shape is defined once as a Zod schema in shared code, and the UI, the mobile
 
 ## Measured performance
 
-Recorded from real hardware only. The in-app benchmark panel reports live measurements per scan and renders `—` for anything unmeasured; the table below is filled from a three-device ladder. **Empty cells are pending measurement, never estimated.**
+Recorded from real hardware only. The in-app benchmark panel reports live measurements per scan and renders `—` for anything unmeasured. No cross-device figures are published yet; they will be added only once measured on real devices.
 
-| Metric | Desktop (Win 11 / Chrome) | Galaxy S25 Ultra (Chrome) | Galaxy S7 Edge (Chrome) |
-|---|---|---|---|
-| Device tier detected | | | |
-| Backend (T1 / T2) | | | (T2 disabled) |
-| Model load, cold / warm | | | |
-| Sampling rate | | | |
-| Frames/sec throughput | | | |
-| Frame latency p50 / p95 | | | |
-| 60 s test video: wall-clock | | | |
-| Tier-2 escalations | | | 0 |
-| UI long-tasks during run | | | |
-
-Method: each device runs the same clips through a pre-scan with default settings; values are read from the benchmark panel, which measures them in-process (`performance.now()` per frame, `PerformanceObserver` for long tasks, `performance.memory` where available).
+Method: run the same clips through a pre-scan with default settings on each device and read the values from the benchmark panel, which measures them in-process (`performance.now()` per frame, `PerformanceObserver` for long tasks, `performance.memory` where available).
 
 ## Limitations and edge cases
 
@@ -365,7 +353,7 @@ Mobile-specific tradeoffs: pre-scan only (no live guard), the platform thumbnail
 
 ## Browser extension
 
-Asking a user to upload a file is a demo affordance. The product shape is *guard whatever is already playing* — which is what `apps/extension` does: a Manifest V3 content script that finds every `<video>` on any site, samples it, and blurs + pauses + explains on a detection. Same `@safeframe/core`, third consumer, unchanged.
+Asking a user to upload a file is a demo affordance. The product shape is *guard whatever is already playing* — which is what `apps/extension` does: a Manifest V3 content script that finds every `<video>` in the top-level page of any http(s) site (players under 160 px are skipped), samples it, and blurs + pauses + explains on a detection. Same `@safeframe/core`, third consumer, unchanged.
 
 ```bash
 pnpm --filter @safeframe/extension build     # → apps/extension/dist
@@ -376,7 +364,7 @@ Then in Chrome or Edge: `chrome://extensions` → enable **Developer mode** → 
 **Design notes**
 
 - Inference runs in a **hidden extension-page iframe**, not an MV3 offscreen document. Offscreen documents are reached via `chrome.runtime` messaging, which is **JSON-serialized** — a 224×224×4 pixel buffer would become a ~200 000-element JSON array per sampled frame. `postMessage` to an iframe uses structured clone, so the `ArrayBuffer` transfers zero-copy. The iframe also inherits the *extension's* CSP (`'wasm-unsafe-eval'`), so the ML runtime loads on sites whose own CSP would refuse it.
-- The build drops NSFWJS's unused Inception-V3 and MobileNetV2-Mid weights, which IIFE bundling would otherwise inline: **39 MB → 4.5 MB**. The content script deep-imports core's pure modules to keep Zod out of a script injected on every page: **330 KB → 8 KB**.
+- The build drops NSFWJS's unused Inception-V3 and MobileNetV2-Mid weights, which IIFE bundling would otherwise inline: **39 MB → 4.5 MB**. The content script deep-imports core's pure modules to keep Zod out of a script injected on every page: **330 KB → ~11 KB**.
 - One inference frame per tab, not per iframe. Injecting into every frame meant each grabbing its own WebGL context, and browsers cap those at roughly 16 per process — which a heavy host page can exhaust on its own.
 
 **Honest limits**

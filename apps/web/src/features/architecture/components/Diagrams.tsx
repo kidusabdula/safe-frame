@@ -166,7 +166,7 @@ export function CascadeDecision() {
         The band is the whole design. Narrow it and you have a single-model
         system; widen it to everything and you have paid for an ensemble. Only
         the frames where the cheap model is genuinely unsure are worth the
-        expensive model&apos;s time — typically well under a fifth of them.
+        expensive model&apos;s time.
       </p>
     </div>
   );
@@ -265,20 +265,20 @@ export function DeviceTiers() {
     {
       tier: "High",
       signals: "WebGPU present · ≥8 GB · fast micro-bench",
-      sampling: "1–2 fps + densify",
+      sampling: "1 fps + densify",
       cascade: "Tier 1 + Tier 2 on WebGPU",
       download: "≈4 MB now, ViT lazily on first borderline frame",
     },
     {
       tier: "Mid",
-      signals: "No WebGPU · ≥4 GB",
+      signals: "Not High or Low · no WebGPU, <8 GB or bench >50 ms",
       sampling: "1 fps + densify",
-      cascade: "Tier 1 + Tier 2 on WASM, escalation budget capped",
+      cascade: "Tier 1 + Tier 2 (WebGPU if present, else WASM), same 40-frame budget",
       download: "≈4 MB now, ViT only if a frame is genuinely borderline",
     },
     {
       tier: "Low",
-      signals: "<4 GB · slow micro-bench",
+      signals: "<4 GB · ≤2 cores · slow micro-bench",
       sampling: "0.5 fps + densify",
       cascade: "Tier 1 only",
       download: "≈4 MB, total. The ViT is never fetched.",
