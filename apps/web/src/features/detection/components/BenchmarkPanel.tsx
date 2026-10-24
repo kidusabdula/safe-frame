@@ -75,7 +75,7 @@ export function BenchmarkPanel({
         {
           label: "Tier-1 load",
           value: ms(record.tier1LoadMs),
-          tip: "Init time for the small MobileNet screener. Bundled with the app — zero network, works offline from the first visit.",
+          tip: "Init time for the small MobileNet screener. It ships in the app's own build, so there is no third-party download, and it loads from the offline cache after the first scan.",
         },
         {
           label: "Tier-2 load",

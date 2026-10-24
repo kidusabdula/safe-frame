@@ -98,7 +98,7 @@ export function Landing() {
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
               <span className="rounded-full border border-border px-3 py-1">Two-tier ML cascade</span>
-              <span className="rounded-full border border-border px-3 py-1">Installable PWA · offline after first visit</span>
+              <span className="rounded-full border border-border px-3 py-1">Installable PWA · offline after first scan</span>
               <span className="rounded-full border border-border px-3 py-1">Timestamped segment map</span>
               <span className="rounded-full border border-border px-3 py-1">Low-end to high-end devices</span>
             </div>
@@ -158,10 +158,11 @@ export function Landing() {
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   A ~3.5M-parameter convolutional network (NSFWJS build),
                   trained to score frames across five classes: porn, hentai,
-                  sexy, neutral, drawing. Ships inside the app — about 4 MB,
-                  zero download, works offline from the first visit.
+                  sexy, neutral, drawing. About 4 MB, shipped in the app&apos;s own
+                  build rather than fetched from a model hub, and cached for
+                  offline use after the first scan.
                 </p>
-                <p className="text-xs text-muted-foreground/80">
+                <p className="text-xs text-muted-foreground">
                   Runtime: TensorFlow.js · WebGL with WASM fallback
                 </p>
               </Card>

@@ -41,7 +41,7 @@ export function ArchitectureClient() {
   const [active, setActive] = useState(SECTIONS[0]!.id);
 
   // Highlight the section currently in view so the nav doubles as a progress
-  // indicator while walking through the page on a call.
+  // indicator while reading.
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -151,9 +151,10 @@ export function ArchitectureClient() {
               both on the user&apos;s own machine.
             </P>
             <Callout>
-              A useful test of the claim: put the device in airplane mode after
-              the first visit and scan a local file. It still works, because
-              there was never anything on the other end of a wire to call.
+              A useful test of the claim: run one scan online, then put the
+              device in airplane mode and scan a local file. It still works,
+              because there was never anything on the other end of a wire to
+              call.
             </Callout>
           </Section>
 
