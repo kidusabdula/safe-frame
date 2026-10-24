@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   ArrowRight,
   Braces,
@@ -16,13 +13,6 @@ import {
 } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
-
-const fadeUp = {
-  initial: { opacity: 0, y: 14 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-60px" },
-  transition: { duration: 0.45, ease: "easeOut" as const },
-};
 
 const PIPELINE = [
   {
@@ -79,7 +69,7 @@ export function Landing() {
       <main className="flex-1">
         {/* Hero */}
         <section className="py-16 text-center sm:py-24">
-          <motion.div {...fadeUp} className="mx-auto max-w-2xl space-y-6">
+          <div className="mx-auto max-w-2xl space-y-6">
             <Badge className="mx-auto">
               <WifiOff className="size-3" /> No server · no uploads · works offline
             </Badge>
@@ -112,24 +102,19 @@ export function Landing() {
               <span className="rounded-full border border-border px-3 py-1">Timestamped segment map</span>
               <span className="rounded-full border border-border px-3 py-1">Low-end to high-end devices</span>
             </div>
-          </motion.div>
+          </div>
         </section>
 
         {/* Pipeline */}
         <section id="how" className="scroll-mt-6 py-12">
-          <motion.h2
-            {...fadeUp}
-            className="mb-8 text-center text-2xl font-semibold tracking-tight text-foreground"
+          <h2
+            className="reveal mb-8 text-center text-2xl font-semibold tracking-tight text-foreground"
           >
             How it works
-          </motion.h2>
+          </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {PIPELINE.map((step, i) => (
-              <motion.div
-                key={step.title}
-                {...fadeUp}
-                transition={{ ...fadeUp.transition, delay: i * 0.07 }}
-              >
+              <div key={step.title} className="reveal">
                 <Card className="h-full space-y-3 p-5">
                   <span className="flex size-10 items-center justify-center rounded-xl bg-chart-area text-primary">
                     <step.icon className="size-5" />
@@ -142,29 +127,27 @@ export function Landing() {
                     {step.body}
                   </p>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </section>
 
         {/* The models */}
         <section className="py-12">
-          <motion.h2
-            {...fadeUp}
-            className="mb-2 text-center text-2xl font-semibold tracking-tight text-foreground"
+          <h2
+            className="reveal mb-2 text-center text-2xl font-semibold tracking-tight text-foreground"
           >
             The models doing the work
-          </motion.h2>
-          <motion.p
-            {...fadeUp}
-            className="mx-auto mb-8 max-w-xl text-center text-sm leading-relaxed text-muted-foreground"
+          </h2>
+          <p
+            className="reveal mx-auto mb-8 max-w-xl text-center text-sm leading-relaxed text-muted-foreground"
           >
             Two open image classifiers, downloaded once and run by your own
             browser — never on a server. The small one screens everything; the
             big one is only consulted when the small one isn&apos;t sure.
-          </motion.p>
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <motion.div {...fadeUp}>
+            <div className="reveal">
               <Card className="h-full space-y-3 p-5">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-foreground">
@@ -182,8 +165,8 @@ export function Landing() {
                   Runtime: TensorFlow.js · WebGL with WASM fallback
                 </p>
               </Card>
-            </motion.div>
-            <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.07 }}>
+            </div>
+            <div className="reveal">
               <Card className="h-full space-y-3 p-5">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-foreground">
@@ -203,13 +186,13 @@ export function Landing() {
                   runs in a Web Worker
                 </p>
               </Card>
-            </motion.div>
+            </div>
           </div>
         </section>
 
         {/* Privacy story */}
         <section className="py-12">
-          <motion.div {...fadeUp}>
+          <div className="reveal">
             <Card className="space-y-4 p-6 sm:p-8">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 The privacy story is the architecture
@@ -234,12 +217,12 @@ export function Landing() {
                 </div>
               </div>
             </Card>
-          </motion.div>
+          </div>
         </section>
 
         {/* CTA */}
         <section className="py-16 text-center">
-          <motion.div {...fadeUp} className="space-y-4">
+          <div className="reveal space-y-4">
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">
               See it work on your own video
             </h2>
@@ -253,7 +236,7 @@ export function Landing() {
             >
               Open SafeFrame <ArrowRight className="size-4" />
             </Link>
-          </motion.div>
+          </div>
         </section>
       </main>
 

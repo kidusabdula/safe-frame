@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useId, useState } from "react";
 import { Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui";
 
 export function UrlIngest({ onUrl }: { onUrl: (url: string) => void }) {
   const [value, setValue] = useState("");
+  const hintId = useId();
 
   const submit = () => {
     let parsed: URL;
@@ -25,18 +25,15 @@ export function UrlIngest({ onUrl }: { onUrl: (url: string) => void }) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: "easeOut", delay: 0.06 }}
-      className="space-y-3"
-    >
+    <div className="space-y-3">
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Link2 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="url"
             inputMode="url"
+            aria-label="Video URL"
+            aria-describedby={hintId}
             placeholder="https://example.com/video.mp4"
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -48,11 +45,11 @@ export function UrlIngest({ onUrl }: { onUrl: (url: string) => void }) {
           Analyze
         </Button>
       </div>
-      <p className="text-xs leading-relaxed text-muted-foreground">
+      <p id={hintId} className="text-xs leading-relaxed text-muted-foreground">
         Direct video-file URLs only. The host must allow cross-origin reads —
         if it doesn&apos;t, we&apos;ll tell you honestly instead of quietly proxying
         through a server (there is no server).
       </p>
-    </motion.div>
+    </div>
   );
 }

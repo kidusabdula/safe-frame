@@ -7,7 +7,7 @@ import {
   type DetectionConfig,
 } from "@safeframe/core";
 import { createFrameGrabber } from "../lib/preprocess";
-import { loadTier1 } from "../lib/tier1";
+import { importTier1 } from "../lib/tier1.lazy";
 
 interface LiveGuardState {
   guardActive: boolean;
@@ -61,7 +61,7 @@ export function useLiveGuard(
       lastRunRef.current = now;
       busyRef.current = true;
       try {
-        const tier1 = await loadTier1();
+        const tier1 = await importTier1();
         if (disposed) return;
         const image = grabber.grab(video);
         const categories = await tier1.classify(image);
@@ -101,7 +101,7 @@ export function useLiveGuard(
     }
     // Warm the model up front so the first scored frame isn't also paying the
     // load cost. `ready` still waits for a real classification.
-    void loadTier1();
+    void importTier1();
 
     return () => {
       disposed = true;

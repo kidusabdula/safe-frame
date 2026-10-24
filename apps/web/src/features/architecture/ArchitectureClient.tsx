@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowLeft, ScanEye, ShieldCheck } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -90,12 +89,7 @@ export function ArchitectureClient() {
         </div>
       </header>
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="max-w-3xl space-y-3 py-6"
-      >
+      <div className="max-w-3xl space-y-3 py-6">
         <Badge>
           <ArrowLeft className="size-3" /> Design document
         </Badge>
@@ -109,7 +103,7 @@ export function ArchitectureClient() {
           when something fails, and the tradeoffs taken on purpose. Everything
           described here is running in the tab you are reading it in.
         </p>
-      </motion.div>
+      </div>
 
       <div className="grid gap-8 pb-16 lg:grid-cols-[200px_minmax(0,1fr)]">
         <nav

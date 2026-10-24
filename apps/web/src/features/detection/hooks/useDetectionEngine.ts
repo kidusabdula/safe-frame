@@ -16,7 +16,7 @@ import {
   type DetectionProgress,
   type TimelinePoint,
 } from "../lib/runDetection";
-import { loadTier1 } from "../lib/tier1";
+import { importTier1, prefetchTier1Runtime } from "../lib/tier1.lazy";
 import { createTier2Client, type Tier2Client } from "../lib/tier2.client";
 import type { DeviceTierState } from "./useDeviceTier";
 import type { useBenchmark } from "./useBenchmark";
@@ -188,6 +188,13 @@ export function useDetectionEngine(
     [releaseObjectUrl],
   );
 
+  // Once a video is chosen a scan is likely, so fetch the TensorFlow.js
+  // runtime chunk now instead of on the Pre-scan click. This loads code only:
+  // the model itself still loads (and is timed) when the scan starts.
+  useEffect(() => {
+    if (state.source) prefetchTier1Runtime();
+  }, [state.source]);
+
   const clearSource = useCallback(() => {
     abortRef.current?.abort();
     releaseObjectUrl();
@@ -231,7 +238,7 @@ export function useDetectionEngine(
         );
       });
 
-      const tier1 = await loadTier1();
+      const tier1 = await importTier1();
       benchmark.note({ tier1LoadMs: tier1.loadMs });
 
       // 5-frame micro-benchmark on the loaded Tier-1 model refines the

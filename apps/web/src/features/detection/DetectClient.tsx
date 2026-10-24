@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import * as Tabs from "@radix-ui/react-tabs";
-import { motion } from "framer-motion";
 import {
   AlertTriangle,
   Cpu,
@@ -176,12 +175,7 @@ export function DetectClient() {
       <main className="flex-1 pb-10">
         {!engine.source ? (
           <div className="mx-auto max-w-xl space-y-6 pt-8 sm:pt-16">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="space-y-2 text-center"
-            >
+            <div className="space-y-2 text-center">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 Check a video for inappropriate content
               </h1>
@@ -191,7 +185,7 @@ export function DetectClient() {
                 desktops. No uploads, no server, no account: your video never
                 leaves this device.
               </p>
-            </motion.div>
+            </div>
 
             <Tabs.Root defaultValue="file">
               <Tabs.List className="mb-4 grid grid-cols-2 rounded-xl border border-border bg-surface p-1">
