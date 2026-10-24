@@ -4,9 +4,11 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+import { SITE_URL } from "@/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "SafeFrame — on-device video content detection",
   description:
     "Detects inappropriate video content entirely in your browser. No server, no uploads — nothing leaves this device.",
