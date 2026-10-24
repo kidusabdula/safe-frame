@@ -127,7 +127,6 @@ export function DetectClient() {
         <div className="flex min-w-0 items-center gap-3">
           <Link
             href="/"
-            aria-label="SafeFrame home"
             className="group flex items-center gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform group-hover:scale-105">
@@ -411,7 +410,7 @@ function ErrorCard({
             : "Something went wrong"}
         </p>
       </div>
-      <p className="text-xs leading-relaxed text-foreground/80">
+      <p className="text-xs leading-relaxed text-foreground">
         {error.kind === "cors"
           ? "The video's host doesn't send CORS headers, so the browser won't let us read its frames locally. We could work around this with a proxy server — but SafeFrame's whole point is that no server ever sees your video. Try downloading the file and uploading it instead; that always works."
           : error.message}

@@ -307,7 +307,12 @@ export function DeviceTiers() {
         the hints only propose a tier; a real measurement on the real hardware
         confirms it before anything large is downloaded.
       </p>
-      <div className="overflow-x-auto">
+      <div
+        className="overflow-x-auto"
+        tabIndex={0}
+        role="region"
+        aria-label="Device tiers table"
+      >
         <table className="w-full min-w-[560px] border-collapse text-xs">
           <thead>
             <tr className="border-b border-border text-left text-muted-foreground">
@@ -453,12 +458,15 @@ export function OfflineStory() {
 export function ComparisonTable({
   headers,
   rows,
+  label,
 }: {
   headers: string[];
   rows: Array<{ cells: ReactNode[]; chosen?: boolean }>;
+  /** Names the scrollable region for keyboard and screen-reader users. */
+  label: string;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={label}>
       <table className="w-full min-w-[620px] border-collapse text-xs">
         <thead>
           <tr className="border-b border-border text-left text-muted-foreground">

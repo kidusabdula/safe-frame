@@ -65,7 +65,6 @@ export function ArchitectureClient() {
       <header className="flex items-center justify-between gap-3 py-5">
         <Link
           href="/"
-          aria-label="SafeFrame home"
           className="group flex items-center gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform group-hover:scale-105">
@@ -128,7 +127,7 @@ export function ArchitectureClient() {
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <span className="tabular-nums opacity-50">{i + 1}</span>
+                  <span className="text-muted-foreground tabular-nums">{i + 1}</span>
                   {s.title}
                 </a>
               </li>
@@ -320,6 +319,7 @@ export function ArchitectureClient() {
               chosen over and why.
             </P>
             <ComparisonTable
+              label="Alternatives considered"
               headers={["Approach", "Accuracy", "Cost on low-end hardware", "Verdict"]}
               rows={[
                 {
@@ -377,6 +377,7 @@ export function ArchitectureClient() {
               The combination is what avoids all three failures.
             </P>
             <ComparisonTable
+              label="Response options"
               headers={["Response", "Experience", "Technical cost", "Verdict"]}
               rows={[
                 {

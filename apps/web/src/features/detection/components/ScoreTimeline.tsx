@@ -289,7 +289,7 @@ export function ScoreTimeline({
               ) : (
                 <p className="text-muted-foreground">no frames yet</p>
               )}
-              {onSeek && <p className="text-muted-foreground/70">click to seek</p>}
+              {onSeek && <p className="text-muted-foreground">click to seek</p>}
             </div>
           </div>
         )}

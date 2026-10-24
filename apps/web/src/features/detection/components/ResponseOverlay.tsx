@@ -106,6 +106,7 @@ function ParentGate({ onUnlock }: { onUnlock: () => void }) {
   };
 
   const startHold = () => {
+    if (timerRef.current !== null) return;
     setHolding(true);
     const t0 = performance.now();
     const tick = () => {
@@ -137,14 +138,25 @@ function ParentGate({ onUnlock }: { onUnlock: () => void }) {
             Parent check
           </Dialog.Title>
           <Dialog.Description className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            Press and hold the button for two seconds to resume playback of the
-            flagged section.
+            Press and hold the button (or hold Space) for two seconds to resume
+            playback of the flagged section.
           </Dialog.Description>
           <button
             type="button"
             onPointerDown={startHold}
             onPointerUp={stopHold}
             onPointerLeave={stopHold}
+            // Keyboard users hold Space or Enter for the same two seconds.
+            onKeyDown={(e) => {
+              if ((e.key === " " || e.key === "Enter") && !e.repeat) {
+                e.preventDefault();
+                startHold();
+              }
+            }}
+            onKeyUp={(e) => {
+              if (e.key === " " || e.key === "Enter") stopHold();
+            }}
+            onBlur={stopHold}
             className="relative mt-4 flex min-h-12 w-full items-center justify-center overflow-hidden rounded-xl border border-border bg-surface text-sm font-medium text-foreground select-none focus-visible:outline-2 focus-visible:outline-ring"
           >
             <span

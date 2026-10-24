@@ -198,7 +198,7 @@ export function Landing() {
                   Fetched once on capable devices, then cached; low-end devices
                   never download it at all.
                 </p>
-                <p className="text-xs text-muted-foreground/80">
+                <p className="text-xs text-muted-foreground">
                   Runtime: Transformers.js / ONNX · WebGPU with WASM fallback ·
                   runs in a Web Worker
                 </p>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ReducedMotion } from "@/components/ReducedMotion";
 import { DetectClient } from "@/features/detection/DetectClient";
 
 export const metadata: Metadata = {
@@ -6,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function DetectPage() {
-  return <DetectClient />;
+  return (
+    <ReducedMotion>
+      <DetectClient />
+    </ReducedMotion>
+  );
 }
