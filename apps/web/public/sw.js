@@ -1,5 +1,5 @@
 /* SafeFrame service worker — hand-rolled, cache-first for the app shell and
- * model runtime assets so the second visit works fully offline.
+ * model runtime assets so the app works fully offline after one online scan.
  *
  * Caching layers:
  *  - SHELL: navigations + same-origin static assets (network-first for HTML
@@ -9,13 +9,15 @@
  *    Cache API bucket ("transformers-cache"), so this worker deliberately
  *    does not double-cache cross-origin model files.
  */
-const SHELL_CACHE = "safeframe-shell-v3";
+const SHELL_CACHE = "safeframe-shell-v4";
 
+// Clean URLs only. `cache.addAll` rejects the whole install if any entry
+// fails, and Vercel's Next.js preset serves the export at clean URLs only:
+// `/detect.html` is a 404 there, which used to fail the install outright.
 const PRECACHE = [
   "/",
   "/detect",
-  "/detect.html",
-  "/index.html",
+  "/architecture",
   "/manifest.webmanifest",
   "/icons/icon.svg",
   "/icons/icon-192.png",
@@ -71,7 +73,7 @@ self.addEventListener("fetch", (event) => {
         .catch(() =>
           caches
             .match(request)
-            .then((hit) => hit ?? caches.match("/detect.html"))
+            .then((hit) => hit ?? caches.match("/detect"))
             .then((hit) => hit ?? Response.error()),
         ),
     );
