@@ -48,6 +48,7 @@ pnpm dev          # → http://localhost:3000
 ```bash
 pnpm test         # vitest on packages/core (38 tests)
 pnpm typecheck    # strict TS across the workspace
+pnpm lint         # ESLint (Next.js core-web-vitals + TypeScript) on the web app
 pnpm build        # static export → apps/web/out (proof no server is involved)
 ```
 
