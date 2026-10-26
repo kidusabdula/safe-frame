@@ -7,7 +7,6 @@ import type { DetectionConfig } from "@safeframe/core";
 import { Button, Card } from "@/components/ui";
 import type { useBenchmark } from "./hooks/useBenchmark";
 import type { DetectionEngine } from "./hooks/useDetectionEngine";
-import type { ScanLogEntry } from "./lib/scanLog";
 import { BenchmarkPanel } from "./components/BenchmarkPanel";
 import { PayloadViewer } from "./components/PayloadViewer";
 import { ProgressHud } from "./components/ProgressHud";
@@ -24,8 +23,6 @@ import {
 interface ScanWorkspaceProps {
   engine: DetectionEngine;
   benchmark: ReturnType<typeof useBenchmark>;
-  scanLog: ScanLogEntry[];
-  onScanLogChange: (entries: ScanLogEntry[]) => void;
 }
 
 /**
@@ -36,7 +33,7 @@ interface ScanWorkspaceProps {
  *
  * Framer Motion animations in here follow the OS reduced-motion setting.
  */
-export function ScanWorkspace({ engine, benchmark, scanLog, onScanLogChange }: ScanWorkspaceProps) {
+export function ScanWorkspace({ engine, benchmark }: ScanWorkspaceProps) {
   const stageRef = useRef<VideoStageHandle>(null);
 
   // Coarse playhead mirror for the timeline seeker + segment nav. The
@@ -179,7 +176,7 @@ export function ScanWorkspace({ engine, benchmark, scanLog, onScanLogChange }: S
 
           {engine.result && <PayloadViewer result={engine.result} />}
 
-          <ScanLogPanel entries={scanLog} onEntriesChange={onScanLogChange} />
+          <ScanLogPanel />
         </div>
       </div>
     </MotionConfig>

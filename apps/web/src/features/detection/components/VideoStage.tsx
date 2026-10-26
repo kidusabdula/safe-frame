@@ -84,10 +84,14 @@ export const VideoStage = forwardRef<VideoStageHandle, VideoStageProps>(
     const guard = useLiveGuard(videoRef, guardEnabled, config);
 
     // A new source is a new decision — never inherit consent across videos.
-    useEffect(() => {
+    // Reset during render, so the new video is never committed with the old
+    // video's consent.
+    const [stageUrl, setStageUrl] = useState(source.url);
+    if (stageUrl !== source.url) {
+      setStageUrl(source.url);
       setConsented(false);
       setOverride(null);
-    }, [source.url]);
+    }
 
     useImperativeHandle(ref, () => ({
       seek(t: number) {
@@ -135,17 +139,15 @@ export const VideoStage = forwardRef<VideoStageHandle, VideoStageProps>(
     // guard for the rest of the video, so the override dies with its episode:
     // segment overrides clear when the playhead leaves the segment, and guard
     // overrides clear the moment the guard releases.
-    useEffect(() => {
-      if (!guardActive) {
-        setOverride((o) => (o === "guard" ? null : o));
-      }
-    }, [guardActive]);
-
-    useEffect(() => {
-      setOverride((o) =>
-        o !== null && o.startsWith("seg:") && o !== segmentKey ? null : o,
-      );
-    }, [segmentKey]);
+    const [episode, setEpisode] = useState({ guardActive, segmentKey });
+    if (episode.guardActive !== guardActive || episode.segmentKey !== segmentKey) {
+      setEpisode({ guardActive, segmentKey });
+      const ended =
+        override === "guard"
+          ? !guardActive
+          : override !== null && override !== segmentKey;
+      if (ended) setOverride(null);
+    }
 
     // Nothing plays behind the consent gate.
     useEffect(() => {

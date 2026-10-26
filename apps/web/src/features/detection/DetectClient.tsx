@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -19,7 +19,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useBenchmark } from "./hooks/useBenchmark";
 import { useDetectionEngine } from "./hooks/useDetectionEngine";
 import { useDeviceTier } from "./hooks/useDeviceTier";
-import { appendScanLog, readScanLog, type ScanLogEntry } from "./lib/scanLog";
+import { appendScanLog, type ScanLogEntry } from "./lib/scanLog";
 import { ScanLogPanel } from "./components/ScanLogPanel";
 import { SettingsSheet } from "./components/SettingsSheet";
 import { UploadDropzone } from "./components/UploadDropzone";
@@ -46,10 +46,6 @@ export function DetectClient() {
   const engine = useDetectionEngine(device, benchmark);
 
   // Scan log: capture every completed result exactly once.
-  const [scanLog, setScanLog] = useState<ScanLogEntry[]>([]);
-  useEffect(() => {
-    setScanLog(readScanLog());
-  }, []);
   const recordedRef = useRef<DetectionResult | null>(null);
   useEffect(() => {
     const { result, source, resolvedTier, activeBackend } = engine;
@@ -85,9 +81,8 @@ export function DetectClient() {
         drawing: round4(pt.categories.drawing),
       })),
     };
-    void appendScanLog(entry).then(setScanLog);
+    void appendScanLog(entry);
   }, [engine, benchmark.record]);
-
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-4 sm:px-6">
@@ -184,15 +179,10 @@ export function DetectClient() {
               </Tabs.Content>
             </Tabs.Root>
 
-            <ScanLogPanel entries={scanLog} onEntriesChange={setScanLog} />
+            <ScanLogPanel />
           </div>
         ) : (
-          <ScanWorkspace
-            engine={engine}
-            benchmark={benchmark}
-            scanLog={scanLog}
-            onScanLogChange={setScanLog}
-          />
+          <ScanWorkspace engine={engine} benchmark={benchmark} />
         )}
       </main>
 
@@ -203,7 +193,6 @@ export function DetectClient() {
     </div>
   );
 }
-
 
 /** Placeholder with the workspace's shape while its chunk downloads. */
 function WorkspaceLoading() {
