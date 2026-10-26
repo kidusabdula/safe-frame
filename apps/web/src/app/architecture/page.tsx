@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArchitectureClient } from "@/features/architecture/ArchitectureClient";
+import { Architecture } from "@/features/architecture/Architecture";
 
 export const metadata: Metadata = {
   title: "SafeFrame — architecture",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ArchitecturePage() {
-  return <ArchitectureClient />;
+  return <Architecture />;
 }

@@ -2,7 +2,6 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Slider from "@radix-ui/react-slider";
-import { motion } from "framer-motion";
 import { Settings2, X } from "lucide-react";
 import type { DetectionConfig, DeviceTier } from "@safeframe/core";
 import { Button } from "@/components/ui";
@@ -44,173 +43,166 @@ export function SettingsSheet({ config, setConfig, device }: SettingsSheetProps)
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm" />
-        <Dialog.Content asChild>
-          <motion.div
-            initial={{ x: 40, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="fixed top-0 right-0 z-50 flex h-dvh w-[min(92vw,400px)] flex-col border-l border-border bg-surface-elevated shadow-2xl"
-          >
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <Dialog.Title className="text-sm font-semibold text-foreground">
-                Detection settings
-              </Dialog.Title>
-              <Dialog.Close asChild>
-                <Button variant="ghost" aria-label="Close settings" className="size-11 p-0">
-                  <X className="size-4" />
-                </Button>
-              </Dialog.Close>
-            </div>
+        <Dialog.Content className="sheet-in fixed top-0 right-0 z-50 flex h-dvh w-[min(92vw,400px)] flex-col border-l border-border bg-surface-elevated shadow-2xl">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <Dialog.Title className="text-sm font-semibold text-foreground">
+              Detection settings
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <Button variant="ghost" aria-label="Close settings" className="size-11 p-0">
+                <X className="size-4" />
+              </Button>
+            </Dialog.Close>
+          </div>
 
-            <div className="flex-1 space-y-7 overflow-y-auto p-5">
-              <ThresholdSlider
-                label="Flag threshold"
-                hint="Windowed score that opens a flagged segment"
-                value={config.flagThreshold}
-                min={0.2}
-                max={0.95}
-                onChange={(v) =>
-                  setConfig({
-                    flagThreshold: v,
-                    // Hysteresis invariant: release stays below flag.
-                    releaseThreshold: Math.min(config.releaseThreshold, v - 0.05),
-                  })
-                }
-              />
-              <ThresholdSlider
-                label="Release threshold"
-                hint="Windowed score that closes a segment (hysteresis)"
-                value={config.releaseThreshold}
-                min={0.1}
-                max={Math.max(0.15, config.flagThreshold - 0.05)}
-                onChange={(v) => setConfig({ releaseThreshold: v })}
-              />
-              <ThresholdSlider
-                label="Sampling rate"
-                hint="Baseline frames per second (low-tier devices halve this)"
-                value={config.samplingFps}
-                min={0.25}
-                max={2}
-                step={0.25}
-                format={(v) => `${v} fps`}
-                onChange={(v) => setConfig({ samplingFps: v })}
-              />
-              <ThresholdSlider
-                label="Tier-2 budget"
-                hint="Max escalations per video before Tier-1 verdicts apply"
-                value={config.tier2Budget}
-                min={0}
-                max={120}
-                step={5}
-                format={(v) => `${v} calls`}
-                onChange={(v) => setConfig({ tier2Budget: Math.round(v) })}
-              />
+          <div className="flex-1 space-y-7 overflow-y-auto p-5">
+            <ThresholdSlider
+              label="Flag threshold"
+              hint="Windowed score that opens a flagged segment"
+              value={config.flagThreshold}
+              min={0.2}
+              max={0.95}
+              onChange={(v) =>
+                setConfig({
+                  flagThreshold: v,
+                  // Hysteresis invariant: release stays below flag.
+                  releaseThreshold: Math.min(config.releaseThreshold, v - 0.05),
+                })
+              }
+            />
+            <ThresholdSlider
+              label="Release threshold"
+              hint="Windowed score that closes a segment (hysteresis)"
+              value={config.releaseThreshold}
+              min={0.1}
+              max={Math.max(0.15, config.flagThreshold - 0.05)}
+              onChange={(v) => setConfig({ releaseThreshold: v })}
+            />
+            <ThresholdSlider
+              label="Sampling rate"
+              hint="Baseline frames per second (low-tier devices halve this)"
+              value={config.samplingFps}
+              min={0.25}
+              max={2}
+              step={0.25}
+              format={(v) => `${v} fps`}
+              onChange={(v) => setConfig({ samplingFps: v })}
+            />
+            <ThresholdSlider
+              label="Tier-2 budget"
+              hint="Max escalations per video before Tier-1 verdicts apply"
+              value={config.tier2Budget}
+              min={0}
+              max={120}
+              step={5}
+              format={(v) => `${v} calls`}
+              onChange={(v) => setConfig({ tier2Budget: Math.round(v) })}
+            />
 
-              <fieldset className="space-y-2.5">
-                <legend className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Response mode
-                </legend>
-                {RESPONSE_MODES.map((mode) => (
-                  <label
-                    key={mode.value}
-                    className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
-                      config.responseMode === mode.value
-                        ? "border-primary bg-chart-area"
-                        : "border-border hover:border-border-strong"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="responseMode"
-                      className="mt-0.5 accent-current"
-                      checked={config.responseMode === mode.value}
-                      onChange={() => setConfig({ responseMode: mode.value })}
-                    />
-                    <span>
-                      <span className="block text-sm font-medium text-foreground">
-                        {mode.label}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {mode.hint}
-                      </span>
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
-
-              <fieldset className="space-y-2.5">
-                <legend className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Run mode
-                </legend>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["prescan", "live"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setConfig({ runMode: mode })}
-                      className={`min-h-11 rounded-xl border px-3 text-sm font-medium transition-colors ${
-                        config.runMode === mode
-                          ? "border-primary bg-chart-area text-foreground"
-                          : "border-border text-muted-foreground hover:border-border-strong"
-                      }`}
-                    >
-                      {mode === "prescan" ? "Pre-scan" : "Live guard"}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Pre-scan analyzes before playback (high assurance). Live guard
-                  scores during playback, the way a browser engine would.
-                </p>
-
-                <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong">
+            <fieldset className="space-y-2.5">
+              <legend className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Response mode
+              </legend>
+              {RESPONSE_MODES.map((mode) => (
+                <label
+                  key={mode.value}
+                  className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+                    config.responseMode === mode.value
+                      ? "border-primary bg-chart-area"
+                      : "border-border hover:border-border-strong"
+                  }`}
+                >
                   <input
-                    type="checkbox"
+                    type="radio"
+                    name="responseMode"
                     className="mt-0.5 accent-current"
-                    checked={config.strictPreview}
-                    onChange={(e) => setConfig({ strictPreview: e.target.checked })}
+                    checked={config.responseMode === mode.value}
+                    onChange={() => setConfig({ responseMode: mode.value })}
                   />
                   <span>
                     <span className="block text-sm font-medium text-foreground">
-                      Strict: never show unscanned frames
+                      {mode.label}
                     </span>
                     <span className="block text-xs text-muted-foreground">
-                      Creates no video element until a verdict exists, so not even
-                      a blurred thumbnail is decoded. Off by default — the normal
-                      flow blurs the player behind a consent gate instead.
+                      {mode.hint}
                     </span>
                   </span>
                 </label>
-              </fieldset>
+              ))}
+            </fieldset>
 
-              <fieldset className="space-y-2.5">
-                <legend className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Device tier override
-                </legend>
-                <div className="grid grid-cols-4 gap-2">
-                  {TIER_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => device.setOverride(opt.value)}
-                      className={`min-h-11 rounded-xl border px-2 text-sm font-medium transition-colors ${
-                        device.override === opt.value
-                          ? "border-primary bg-chart-area text-foreground"
-                          : "border-border text-muted-foreground hover:border-border-strong"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Auto-detected: <span className="font-medium">{device.estimatedTier}</span>.
-                  Forcing <span className="font-medium">Low</span> disables Tier 2
-                  entirely — its model is never downloaded.
-                </p>
-              </fieldset>
-            </div>
-          </motion.div>
+            <fieldset className="space-y-2.5">
+              <legend className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Run mode
+              </legend>
+              <div className="grid grid-cols-2 gap-2">
+                {(["prescan", "live"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setConfig({ runMode: mode })}
+                    className={`min-h-11 rounded-xl border px-3 text-sm font-medium transition-colors ${
+                      config.runMode === mode
+                        ? "border-primary bg-chart-area text-foreground"
+                        : "border-border text-muted-foreground hover:border-border-strong"
+                    }`}
+                  >
+                    {mode === "prescan" ? "Pre-scan" : "Live guard"}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Pre-scan analyzes before playback (high assurance). Live guard
+                scores during playback, the way a browser engine would.
+              </p>
+
+              <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 accent-current"
+                  checked={config.strictPreview}
+                  onChange={(e) => setConfig({ strictPreview: e.target.checked })}
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">
+                    Strict: never show unscanned frames
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Creates no video element until a verdict exists, so not even
+                    a blurred thumbnail is decoded. Off by default — the normal
+                    flow blurs the player behind a consent gate instead.
+                  </span>
+                </span>
+              </label>
+            </fieldset>
+
+            <fieldset className="space-y-2.5">
+              <legend className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Device tier override
+              </legend>
+              <div className="grid grid-cols-4 gap-2">
+                {TIER_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => device.setOverride(opt.value)}
+                    className={`min-h-11 rounded-xl border px-2 text-sm font-medium transition-colors ${
+                      device.override === opt.value
+                        ? "border-primary bg-chart-area text-foreground"
+                        : "border-border text-muted-foreground hover:border-border-strong"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Auto-detected: <span className="font-medium">{device.estimatedTier}</span>.
+                Forcing <span className="font-medium">Low</span> disables Tier 2
+                entirely — its model is never downloaded.
+              </p>
+            </fieldset>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

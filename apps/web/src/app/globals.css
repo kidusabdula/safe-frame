@@ -168,9 +168,20 @@ body {
   }
 }
 
+/* The settings sheet slides in from the right edge. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+.sheet-in {
+  animation: sheet-in 0.25s ease-out;
+}
+
 /* Reduced motion: no shimmer loop, and transitions and keyframe animations
-   finish instantly. Framer Motion, used only on the detector page, follows
-   the same preference through the ReducedMotion wrapper there. */
+   finish instantly. Framer Motion, used only in the detector's scan
+   workspace, follows the same preference through MotionConfig there. */
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;

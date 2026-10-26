@@ -1,5 +1,3 @@
-"use client";
-
 import { forwardRef, useId, type ButtonHTMLAttributes, type HTMLAttributes } from "react";
 import { Info } from "lucide-react";
 

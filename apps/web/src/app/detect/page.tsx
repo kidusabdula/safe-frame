@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
-import { ReducedMotion } from "@/components/ReducedMotion";
 import { DetectClient } from "@/features/detection/DetectClient";
 
 export const metadata: Metadata = {
@@ -11,9 +10,9 @@ export const metadata: Metadata = {
 // pages don't ship the toast library.
 export default function DetectPage() {
   return (
-    <ReducedMotion>
+    <>
       <DetectClient />
       <Toaster position="bottom-right" richColors />
-    </ReducedMotion>
+    </>
   );
 }
