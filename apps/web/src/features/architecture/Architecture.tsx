@@ -61,7 +61,9 @@ export function Architecture() {
             href="/detect"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-sm font-medium text-foreground transition-colors hover:border-border-strong"
           >
-            <ScanEye className="size-4" /> Open the detector
+            <ScanEye className="size-4" />
+            {/* Icon-only below 380px, where the label would push the row past a 320px screen. */}
+            <span className="max-[379px]:sr-only">Open the detector</span>
           </Link>
           <ThemeToggle />
         </div>
