@@ -15,7 +15,9 @@
   --muted-foreground: oklch(0.5 0.02 255);
   --primary: oklch(0.55 0.19 262);
   --primary-foreground: oklch(0.99 0.005 250);
-  --accent: oklch(0.7 0.14 200);
+  /* The accent is also text (numbers in the verdict JSON, the tier-2 tooltip),
+     so it clears 4.5:1 on every light surface, muted included. */
+  --accent: oklch(0.5 0.1 200);
   /* Status hues are dark enough to read as text at 4.5:1 on their own soft
      tint; the tints keep the original, lighter hue. */
   --success: oklch(0.5 0.13 155);
@@ -141,6 +143,12 @@ body {
   :where(a[href], button, input, select, textarea, summary, video[controls], [tabindex]:not([tabindex="-1"]), [role="button"], [role="tab"], [role="slider"], [role="switch"], [role="radio"]):focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
+  }
+  /* The player fills a clipped, rounded frame, where a ring outside its edge is
+     cut off on every side, so its ring sits inside. The native controls inside
+     the player draw their own. */
+  video[controls]:focus-visible {
+    outline-offset: -2px;
   }
 }
 
