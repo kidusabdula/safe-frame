@@ -106,7 +106,7 @@ export function VerdictCard({
         </div>
 
         {/* Why a high category peak can still be a clean verdict. Without
-            this, a reviewer reads "porn 65%" next to "no content found" as a
+            this, a reader sees "porn 65%" next to "no content found" as a
             contradiction rather than as smoothing working correctly. */}
         {!flagged && peakFullWeight >= 0.5 && (
           <p className="rounded-xl bg-muted px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
@@ -173,10 +173,10 @@ export function VerdictCard({
                   <span className="text-xs font-semibold text-danger tabular-nums">
                     {formatTime(seg.start_s)}–{formatTime(seg.end_s)}
                   </span>
-                  <span className="text-xs text-danger/80 capitalize">
+                  <span className="text-xs text-danger capitalize">
                     {seg.dominant_category}
                   </span>
-                  <span className="ml-auto text-xs text-danger/80 tabular-nums">
+                  <span className="ml-auto text-xs text-danger tabular-nums">
                     peak {(seg.peak_score * 100).toFixed(0)}%
                   </span>
                   {onSeek && <ChevronRight className="size-3.5 text-danger/60" />}

@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import {
   ArrowRight,
@@ -307,7 +305,12 @@ export function DeviceTiers() {
         the hints only propose a tier; a real measurement on the real hardware
         confirms it before anything large is downloaded.
       </p>
-      <div className="overflow-x-auto">
+      <div
+        className="overflow-x-auto"
+        tabIndex={0}
+        role="region"
+        aria-label="Device tiers table"
+      >
         <table className="w-full min-w-[560px] border-collapse text-xs">
           <thead>
             <tr className="border-b border-border text-left text-muted-foreground">
@@ -349,7 +352,7 @@ export function ModelCards() {
       size: "≈4 MB quantized",
       classes: "5 classes: drawing · hentai · neutral · porn · sexy",
       runtime: "TensorFlow.js — WebGL, WASM fallback",
-      network: "None. Ships with the app, so it works offline on first visit.",
+      network: "No third-party fetch. Same-origin chunks from the app's own build, cached for offline use after the first scan.",
     },
     {
       name: "ViT-base NSFW detector",
@@ -405,8 +408,8 @@ export function ModelCards() {
 export function OfflineStory() {
   const steps: Array<{ title: string; body: string; icon: typeof Download }> = [
     {
-      title: "First visit",
-      body: "App shell and the 4 MB screener arrive together — the screener is a bundled asset, not a download, so there is no separate model fetch and no cold-start network dependency.",
+      title: "First scan",
+      body: "The app shell arrives on the first visit; the detection runtime and the 4 MB screener follow as same-origin chunks when a scan starts. They are part of the app's own build, not a model-hub download, so nothing third-party sits on the cold-start path.",
       icon: Download,
     },
     {
@@ -453,12 +456,15 @@ export function OfflineStory() {
 export function ComparisonTable({
   headers,
   rows,
+  label,
 }: {
   headers: string[];
   rows: Array<{ cells: ReactNode[]; chosen?: boolean }>;
+  /** Names the scrollable region for keyboard and screen-reader users. */
+  label: string;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={label}>
       <table className="w-full min-w-[620px] border-collapse text-xs">
         <thead>
           <tr className="border-b border-border text-left text-muted-foreground">

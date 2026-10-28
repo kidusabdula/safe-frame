@@ -11,14 +11,9 @@ import {
   folderLoggingSupported,
   getFolderLogState,
   reauthorizeFolderLogging,
+  useScanLog,
   type FolderLogState,
-  type ScanLogEntry,
 } from "../lib/scanLog";
-
-interface ScanLogPanelProps {
-  entries: ScanLogEntry[];
-  onEntriesChange: (entries: ScanLogEntry[]) => void;
-}
 
 /**
  * Session test log. Every completed scan is captured locally (localStorage,
@@ -26,7 +21,8 @@ interface ScanLogPanelProps {
  * reviewed afterwards without re-scanning — or read by tools outside the
  * browser. Nothing here ever leaves the device.
  */
-export function ScanLogPanel({ entries, onEntriesChange }: ScanLogPanelProps) {
+export function ScanLogPanel() {
+  const entries = useScanLog();
   const [folderState, setFolderState] = useState<FolderLogState>("off");
 
   useEffect(() => {
@@ -85,7 +81,7 @@ export function ScanLogPanel({ entries, onEntriesChange }: ScanLogPanelProps) {
             <Button
               variant="ghost"
               className="min-h-9 px-2 text-xs"
-              onClick={() => onEntriesChange(clearScanLog())}
+              onClick={clearScanLog}
             >
               <Trash2 className="size-3.5" /> Clear
             </Button>

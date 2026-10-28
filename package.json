@@ -1,11 +1,13 @@
 {
   "name": "safeframe",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "description": "Fully client-side video content detection — no server, no external inference.",
   "scripts": {
     "dev": "pnpm --filter @safeframe/web dev",
     "build": "pnpm --filter @safeframe/web build",
+    "lint": "pnpm --filter @safeframe/web lint",
     "test": "pnpm --filter @safeframe/core test",
     "typecheck": "pnpm -r typecheck",
     "mobile": "pnpm --filter @safeframe/mobile start"

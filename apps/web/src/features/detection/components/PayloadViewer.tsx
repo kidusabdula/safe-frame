@@ -69,7 +69,11 @@ export function PayloadViewer({ result }: { result: DetectionResult }) {
         </div>
       </div>
       {open && (
-        <pre className="max-h-80 overflow-auto p-4 font-mono text-xs leading-relaxed text-muted-foreground">
+        <pre
+          tabIndex={0}
+          aria-label="Verdict payload JSON"
+          className="max-h-80 overflow-auto p-4 font-mono text-xs leading-relaxed text-muted-foreground"
+        >
           {highlighted}
         </pre>
       )}

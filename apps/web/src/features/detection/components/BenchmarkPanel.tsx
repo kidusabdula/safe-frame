@@ -75,7 +75,7 @@ export function BenchmarkPanel({
         {
           label: "Tier-1 load",
           value: ms(record.tier1LoadMs),
-          tip: "Init time for the small MobileNet screener. Bundled with the app — zero network, works offline from the first visit.",
+          tip: "Init time for the small MobileNet screener. It ships in the app's own build, so there is no third-party download, and it loads from the offline cache after the first scan.",
         },
         {
           label: "Tier-2 load",
@@ -134,7 +134,7 @@ export function BenchmarkPanel({
       <div className="space-y-4 p-4">
         {groups.map((group) => (
           <div key={group.title}>
-            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground/80 uppercase">
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
               <group.icon className="size-3" /> {group.title}
             </p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
@@ -146,15 +146,18 @@ export function BenchmarkPanel({
                   </dt>
                   <dd className="text-sm font-medium text-foreground tabular-nums">
                     {row.value}
+                    {row.bar !== undefined && row.bar !== null && (
+                      <span
+                        aria-hidden
+                        className="mt-1 block h-1 w-full overflow-hidden rounded-full bg-muted"
+                      >
+                        <span
+                          className="block h-full rounded-full bg-chart-line"
+                          style={{ width: `${Math.max(3, row.bar * 100)}%` }}
+                        />
+                      </span>
+                    )}
                   </dd>
-                  {row.bar !== undefined && row.bar !== null && (
-                    <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-chart-line"
-                        style={{ width: `${Math.max(3, row.bar * 100)}%` }}
-                      />
-                    </div>
-                  )}
                 </div>
               ))}
             </dl>

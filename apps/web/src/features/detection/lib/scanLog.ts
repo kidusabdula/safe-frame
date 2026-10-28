@@ -11,6 +11,7 @@
  *    file there. This exists so scan results from a test session can be
  *    reviewed by tooling outside the browser without any server.
  */
+import { useSyncExternalStore } from "react";
 import type { DetectionConfig, DetectionResult } from "@safeframe/core";
 
 export interface ScanBenchmarkSnapshot {
@@ -62,8 +63,7 @@ const MAX_ENTRIES = 50;
 
 /* ── localStorage ring buffer ─────────────────────────────────────────── */
 
-export function readScanLog(): ScanLogEntry[] {
-  if (typeof window === "undefined") return [];
+function readScanLog(): ScanLogEntry[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
@@ -74,25 +74,53 @@ export function readScanLog(): ScanLogEntry[] {
   }
 }
 
-export async function appendScanLog(entry: ScanLogEntry): Promise<ScanLogEntry[]> {
-  const { frames: _frames, ...slim } = entry;
-  const entries = [slim, ...readScanLog()].slice(0, MAX_ENTRIES);
+/*
+ * Components read the log through useScanLog(), an external store over the
+ * ring buffer: the prerendered page and hydration see an empty log, then the
+ * browser's copy, and every append or clear re-renders every reader.
+ */
+const NO_ENTRIES: ScanLogEntry[] = [];
+const listeners = new Set<() => void>();
+let snapshot: ScanLogEntry[] | null = null;
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function getSnapshot(): ScanLogEntry[] {
+  snapshot ??= readScanLog();
+  return snapshot;
+}
+
+function publish(entries: ScanLogEntry[]): void {
+  snapshot = entries;
+  for (const listener of listeners) listener();
+}
+
+export function useScanLog(): ScanLogEntry[] {
+  return useSyncExternalStore(subscribe, getSnapshot, () => NO_ENTRIES);
+}
+
+export async function appendScanLog(entry: ScanLogEntry): Promise<void> {
+  // The ring buffer keeps the summary; per-frame detail goes to the folder copy.
+  const entries = [{ ...entry, frames: undefined }, ...getSnapshot()].slice(0, MAX_ENTRIES);
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   } catch {
     // Quota/private-mode failures degrade to folder-only capture.
   }
+  publish(entries);
   await writeEntryToFolder(entry);
-  return entries;
 }
 
-export function clearScanLog(): ScanLogEntry[] {
+export function clearScanLog(): void {
   try {
     window.localStorage.removeItem(STORAGE_KEY);
   } catch {
     // ignore
   }
-  return [];
+  publish(NO_ENTRIES);
 }
 
 /* ── File System Access auto-save (Chromium only) ─────────────────────── */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   resolveTier,
   type DeviceSignals,
@@ -21,18 +21,33 @@ export interface DeviceTierState {
   setOverride: (tier: DeviceTier | null) => void;
 }
 
-export function useDeviceTier(): DeviceTierState {
-  const [override, setOverride] = useState<DeviceTier | null>(null);
-  const [signals, setSignals] = useState<DeviceSignals>({ hasWebGpu: false });
+/** What the prerendered page assumes before the browser reports anything. */
+const SERVER_SIGNALS: DeviceSignals = { hasWebGpu: false };
 
-  useEffect(() => {
+let browserSignals: DeviceSignals | null = null;
+
+/** Read once: the device does not change during a visit. */
+function readBrowserSignals(): DeviceSignals {
+  if (!browserSignals) {
     const nav = navigator as ChromeNavigator;
-    setSignals({
+    browserSignals = {
       deviceMemory: nav.deviceMemory,
       cores: nav.hardwareConcurrency,
       hasWebGpu: nav.gpu !== undefined,
-    });
-  }, []);
+    };
+  }
+  return browserSignals;
+}
+
+const noSubscription = () => () => {};
+
+export function useDeviceTier(): DeviceTierState {
+  const [override, setOverride] = useState<DeviceTier | null>(null);
+  const signals = useSyncExternalStore(
+    noSubscription,
+    readBrowserSignals,
+    () => SERVER_SIGNALS,
+  );
 
   const estimatedTier = useMemo(() => resolveTier(signals), [signals]);
 

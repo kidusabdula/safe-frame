@@ -7,7 +7,7 @@ import {
   type DetectionConfig,
 } from "@safeframe/core";
 import { createFrameGrabber } from "../lib/preprocess";
-import { loadTier1 } from "../lib/tier1";
+import { importTier1 } from "../lib/tier1.lazy";
 
 interface LiveGuardState {
   guardActive: boolean;
@@ -23,6 +23,8 @@ interface LiveGuardState {
 /** Minimum gap between live classifications — keeps playback smooth. */
 const LIVE_INTERVAL_MS = 350;
 
+const IDLE: LiveGuardState = { guardActive: false, lastScore: 0, ready: false };
+
 /**
  * Live guard mode: scores frames DURING playback via
  * requestVideoFrameCallback (falling back to timeupdate) and drives the
@@ -34,19 +36,20 @@ export function useLiveGuard(
   enabled: boolean,
   config: DetectionConfig,
 ): LiveGuardState {
-  const [state, setState] = useState<LiveGuardState>({
-    guardActive: false,
-    lastScore: 0,
-    ready: false,
-  });
+  const [state, setState] = useState<LiveGuardState>(IDLE);
   const busyRef = useRef(false);
   const lastRunRef = useRef(0);
 
+  // Turning the guard off forgets what it saw, so turning it back on starts
+  // from a guard that has scored nothing yet.
+  const [wasEnabled, setWasEnabled] = useState(enabled);
+  if (wasEnabled !== enabled) {
+    setWasEnabled(enabled);
+    if (!enabled) setState(IDLE);
+  }
+
   useEffect(() => {
-    if (!enabled) {
-      setState({ guardActive: false, lastScore: 0, ready: false });
-      return;
-    }
+    if (!enabled) return;
     const video = videoRef.current;
     if (!video) return;
 
@@ -61,7 +64,7 @@ export function useLiveGuard(
       lastRunRef.current = now;
       busyRef.current = true;
       try {
-        const tier1 = await loadTier1();
+        const tier1 = await importTier1();
         if (disposed) return;
         const image = grabber.grab(video);
         const categories = await tier1.classify(image);
@@ -101,7 +104,7 @@ export function useLiveGuard(
     }
     // Warm the model up front so the first scored frame isn't also paying the
     // load cost. `ready` still waits for a real classification.
-    void loadTier1();
+    void importTier1();
 
     return () => {
       disposed = true;

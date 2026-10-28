@@ -1,8 +1,8 @@
 # SafeFrame
 
-**Fully client-side video content detection.** Upload a video (or paste a URL) and a two-tier ML cascade samples and classifies frames — entirely in your browser. You get a verdict payload, a per-frame score timeline, and a live response layer (blur / pause / replace / skip) suitable for a kids-safety browser.
+**Fully client-side video content detection.** Upload a video (or paste a URL) and a two-tier ML cascade samples and classifies frames — entirely in your browser. You get a verdict payload, a per-frame score timeline, and a live response layer (blur, pause, hide, skip, or a composite with a calm replacement card) suitable for a kids-safety browser.
 
-🔗 **Live: [safeframe-livid.vercel.app](https://safeframe-livid.vercel.app)** — installable as a PWA; works offline after the first visit.
+🔗 **Live: [safeframe-livid.vercel.app](https://safeframe-livid.vercel.app)** — installable as a PWA; once it has run one scan online, it also works offline.
 📐 **Interactive architecture walkthrough: [/architecture](https://safeframe-livid.vercel.app/architecture)** — the design rationale as a live page, including a widget that runs the real scoring code.
 
 > **There is no server.** No database, no API routes, no telemetry, no analytics, no external inference. The deploy artifact is a static export; the only network traffic at runtime is (a) the one-time Tier-2 model download on capable devices and (b) video URLs you explicitly provide. Frames never leave the device — that isn't a limitation of the prototype, it's the point: a kids-safety browser cannot ship children's screen content to a server.
@@ -11,9 +11,9 @@
 
 ## Contents
 
-[Repository map](#repository-map) · [Setup](#setup) · [Using the app](#using-the-app) · [Architecture](#architecture) · [The models](#the-models) · [Tradeoffs & alternatives](#tradeoffs-and-alternatives-considered) · [Responding to a detection](#responding-to-a-detection) · [The API](#the-api) · [Measured performance](#measured-performance) · [Limitations](#limitations-and-edge-cases) · [Path to production](#path-to-production-on-mobile) · [Mobile app](#mobile-app) · [Browser extension](#browser-extension) · [Test URLs](#cors-readable-test-urls)
+[Repository Map](#repository-map) · [Setup](#setup) · [Using The App](#using-the-app) · [Architecture](#architecture) · [The Models](#the-models) · [Tradeoffs And Alternatives](#tradeoffs-and-alternatives-considered) · [Responding To A Detection](#responding-to-a-detection) · [The API](#the-api) · [Measured Performance](#measured-performance) · [Limitations](#limitations-and-edge-cases) · [Path To Production](#path-to-production-on-mobile) · [Mobile App](#mobile-app) · [Browser Extension](#browser-extension) · [Test URLs](#cors-readable-test-urls)
 
-## Repository map
+## Repository Map
 
 ```
 safe-frame/
@@ -48,6 +48,7 @@ pnpm dev          # → http://localhost:3000
 ```bash
 pnpm test         # vitest on packages/core (38 tests)
 pnpm typecheck    # strict TS across the workspace
+pnpm lint         # ESLint (Next.js core-web-vitals + TypeScript) on the web app
 pnpm build        # static export → apps/web/out (proof no server is involved)
 ```
 
@@ -55,16 +56,13 @@ There is nothing else to configure: no API keys, no environment variables, no se
 
 ### Deploy
 
-The build is a plain static export, so any static host works (`npx serve apps/web/out`). For Vercel, deploy the prebuilt output rather than letting the platform build — the remote builder runs `npm install`, which can't resolve this repo's `workspace:*` protocol:
+The build is a plain static export, so any static host works (`npx serve apps/web/out`).
 
-```bash
-pnpm build
-cd apps/web/out && npx vercel deploy --prod
-```
+The live site is built by Vercel from Git: the project's Root Directory is `apps/web` with the Next.js framework preset, and Vercel installs the whole pnpm workspace, so `workspace:*` resolves. `apps/web/vercel.json` adds the two cache headers the export needs (`/sw.js` is never cached; the `/tfjs-wasm/` runtimes are immutable). A push to `main` deploys production; any other branch gets a preview deployment.
 
-## Using the app
+## Using The App
 
-1. Open the app (Chrome recommended; installable as a PWA — after the first visit it works offline).
+1. Open the app (Chrome recommended; installable as a PWA — once it has run one scan online, it works offline).
 2. Drop a video file, or paste a direct video URL. [Verified CORS-readable URLs are listed below](#cors-readable-test-urls). If a URL's host blocks cross-origin reads, the app explains why instead of failing silently — proxying through a server would defeat the product.
 3. **The player mounts hard-blurred.** Nothing legible is shown before it has been checked, not even a thumbnail. You then choose **Pre-scan** for certainty or **Watch with live guard** for immediacy. (Settings → *Strict: never show unscanned frames* goes further and refuses to create a video element at all until a verdict exists.)
 4. **Pre-scan** runs the cascade and renders the verdict, category breakdown, flagged-segment map, score timeline, and the JSON payload.
@@ -72,7 +70,7 @@ cd apps/web/out && npx vercel deploy --prod
 6. **Live guard** (the toggle beside *Pre-scan video*) scores frames during playback instead — the way an embedded browser engine would run it. Tier-1 only by design: latency over accuracy.
 7. The **benchmark panel** shows resolved device tier, chosen backend, model load times, throughput and frame-latency percentiles — measured on your device, never estimated.
 
-### Tuning against captured scans
+### Tuning Against Captured Scans
 
 The scan log can auto-save every result — including **per-frame class scores and the raw Tier-2 probability** — as JSON to a folder you pick (Chromium's File System Access API; entirely local). Point it at the git-ignored `test-logs/`, then replay those scans offline under different thresholds:
 
@@ -86,13 +84,13 @@ It re-derives each frame's score from the stored class distribution, so `tier2We
 
 ## Architecture
 
-### Problem framing
+### Problem Framing
 
 Accept a video by upload or URL, decide whether it contains inappropriate visual content, return a verdict plus confidence — with everything running locally in the browser, no inference API and no server-side processing. The production target is a mobile browser on hardware that may be several years old.
 
-That constraint is treated as the product rather than an obstacle. A kids-safety browser cannot ship a child's screen to a server: it fails on privacy, legal exposure, offline reliability, latency and per-user cost simultaneously. So there is no database and no server component anywhere in this system. The only persistence is model weights in the Cache API and preferences in localStorage, both on the user's own machine.
+That constraint is treated as the product rather than an obstacle. A kids-safety browser cannot ship a child's screen to a server: it fails on privacy, legal exposure, offline reliability, latency and per-user cost simultaneously. So there is no database and no server component anywhere in this system. The only persistence is the app shell and model weights in the Cache API, and preferences and the scan log in localStorage, all on the user's own machine.
 
-### Why image classifiers, not a vision LLM
+### Why Image Classifiers, Not A Vision LLM
 
 Deciding whether a frame contains nudity is an image-classification problem, and purpose-built open models for it are measured in megabytes. A multimodal LLM can answer the same question, but the smallest usable vision-language models are hundreds of megabytes to gigabytes, take seconds per frame on a phone, and drain a battery doing it — losing on compute, memory, battery and device variability at once.
 
@@ -109,7 +107,7 @@ URL        fps                        borderline   evidence       (blur/pause)
 
 **Ingest.** File upload creates an object URL — fully local, any size, no network. URL ingestion fetches with CORS; if the host sends no CORS headers the canvas is tainted and frames can't be read, which the UI states honestly rather than proxying.
 
-**Sampling.** A hidden `<video>` is seeked programmatically (`seek → seeked → drawImage`), which runs faster than real-time playback and decodes no audio. Baseline 1 fps; low-tier devices drop to 0.5. When a frame lands in the uncertain band the sampler **densifies locally** — the surrounding ±2 s at 2 fps — so short flashes near a hit aren't missed. Ten minutes of video becomes a few hundred classified frames, not eighteen thousand.
+**Sampling.** A hidden `<video>` is seeked programmatically (`seek → seeked → drawImage`), which runs faster than real-time playback and decodes no audio. Baseline 1 fps; low-tier devices drop to 0.5. When a frame scores at or above the release threshold (0.40 by default) the sampler **densifies locally** — the surrounding ±2 s at 2 fps — so short flashes near a hit aren't missed. Ten minutes of video at the 1 fps baseline is 600 classified frames plus any densified ones, not the 18,000 a 30 fps decode would produce.
 
 **Preprocess.** Frames are drawn to a canvas at 224×224, the models' native input, so full-resolution pixels never move. This is the single largest performance win in the system.
 
@@ -117,7 +115,7 @@ URL        fps                        borderline   evidence       (blur/pause)
 
 **Threading.** Tier-2 inference runs in a **Web Worker**, so the heavy path never touches the main thread. The sampling loop yields between frames, which is why progress, the timeline and cancellation stay responsive throughout — the benchmark panel counts long tasks over 50 ms so that claim is measured rather than asserted.
 
-### The two-tier cascade
+### The Two-Tier Cascade
 
 Every sampled frame is scored by Tier 1. That score routes the frame:
 
@@ -131,7 +129,7 @@ Every sampled frame is scored by Tier 1. That score routes the frame:
 
 The escalation band *is* the design. Narrow it and you have a single-model system; widen it to everything and you've paid for an ensemble. The point is to spend the expensive model only where it changes the answer.
 
-#### Tier 2 arbitrates; it does not overwrite
+#### Tier 2 Arbitrates; It Does Not Overwrite
 
 An earlier build assigned the Tier-2 score directly, replacing Tier-1's. That is wrong, and live testing proved it: it hands the verifier a **unilateral veto**, so frames whose Tier-1 score happened to land inside the escalation band could be pulled *below* the flag line — and videos containing real explicit footage came back clean. The tell was in the data: every incorrect verdict came from a scan with a high escalation count, while every scan where Tier 1 was confident enough to skip escalation was correct.
 
@@ -149,7 +147,7 @@ p     = clamp01( max(blend, scores.porn) )
 
 **The generalisable lesson:** in a cascade, *"the better model wins"* is not the same rule as *"the better model decides alone."* A verifier introduced to suppress false positives will suppress true positives too unless something bounds it.
 
-### The decision layer
+### The Decision Layer
 
 Per-frame scores feed an EWMA-smoothed 5-sample window. A flagged **segment** opens when the smoothed score crosses 0.60 and closes when it falls below 0.40 — hysteresis prevents flicker at the boundary, and segment starts are backdated to the earliest in-window hot frame so onsets aren't clipped by smoothing lag.
 
@@ -159,7 +157,7 @@ There are **two independent paths to a positive verdict**, and the second exists
 
 The `/architecture` page has an interactive version of this — presets for each scenario (sustained, short insert, single spike, swimwear, boundary flicker) with live threshold sliders, running the shipped aggregator rather than a mock.
 
-### Fallback chains
+### Fallback Chains
 
 Nothing here has a single point of failure. Four chains degrade rather than break, and all four are in shipped code:
 
@@ -168,7 +166,7 @@ Nothing here has a single point of failure. Four chains degrade rather than brea
 3. **Graceful degradation** — Tier-2 worker dies mid-scan → finish on Tier 1 rather than fail. Low-tier device → Tier 2 never downloaded at all.
 4. **Capability detection** — `requestVideoFrameCallback` → `timeupdate`; `OffscreenCanvas` → hidden canvas; File System Access → localStorage; CORS-readable URL → honest guidance to upload.
 
-#### Why chain 2's ordering is load-bearing
+#### Why Chain 2's Ordering Is Load-Bearing
 
 Quantization is usually a clean trade: int8 weights are ~¼ the size of fp32 for a small accuracy cost. The trap is that **quantized operator support is per-backend, not universal** — and when it's missing the failure mode is not an exception. Running the int8 ViT on the WebGPU execution provider produced *silent numeric garbage*: safe frames scoring 0.99 nsfw, nothing logged anywhere.
 
@@ -176,7 +174,7 @@ What surfaced it was arithmetic, not a test. A swimwear clip returned 0.9926, wh
 
 Hence float weights on WebGPU, int8 reserved for WASM where it's both correct and the bandwidth win it was designed to be. **A silent numerical failure is more dangerous than a crash**, because only one of the two tells you.
 
-### Device tiering
+### Device Tiering
 
 Static hints only *propose* a tier; a live 5-frame micro-benchmark on the actual hardware confirms it before anything large is downloaded. `navigator.deviceMemory` alone is unreliable — coarse, capped, and a phone can report four cores while thermally throttling.
 
@@ -190,7 +188,7 @@ One build serves low-end and high-end hardware alike, degrading accuracy gracefu
 
 ---
 
-## The models
+## The Models
 
 | | **Tier 1 — screener** | **Tier 2 — verifier** |
 |---|---|---|
@@ -200,24 +198,24 @@ One build serves low-end and high-end hardware alike, degrading accuracy gracefu
 | Weights | ≈4 MB quantized | 84 MB int8 · 164 MB fp16 · 329 MB fp32 |
 | Output | 5 classes: drawing · hentai · neutral · porn · sexy | 2 classes: sfw · nsfw |
 | Runtime | TensorFlow.js — WebGL, WASM fallback | ONNX Runtime Web — WebGPU, WASM fallback, in a Web Worker |
-| Network | **None.** Ships with the app, so it works offline from the first visit. | Fetched lazily on the first borderline frame, then persisted in the Cache API. Never fetched at all on a low-tier device. |
+| Network | **No third-party download.** The weights are part of the app's own build: same-origin chunks fetched when the first scan starts, then cached by the service worker. | Fetched lazily on the first borderline frame, then persisted in the Cache API. Never fetched at all on a low-tier device. |
 
-### Why this is the right pairing for mobile
+### Why This Is The Right Pairing For Mobile
 
-- **The screener is small enough to be unconditional.** At ~4 MB and single-digit-to-low-tens of milliseconds per frame, it can run on every sampled frame of every device in the fleet, including hardware several years old. Because it's bundled rather than downloaded, there is no cold-start network dependency at all.
+- **The screener is small enough to be unconditional.** At ~4 MB and a 224×224 input, it is cheap enough to run on every sampled frame of every device, including hardware several years old. Because it ships in the app's own build rather than coming from a model hub, there is no third-party dependency at cold start.
 - **The verifier is only ever conditional.** It's fetched on demand, cached after once, and gated by device tier — so the accuracy ceiling rises on capable hardware without imposing an 84 MB download on a phone that can't use it.
 - **Both are 224×224 image classifiers**, which is the shape mobile NPUs and Core ML / NNAPI accelerate best. The same weights port to ONNX Runtime Mobile without redesign — `apps/mobile` already demonstrates exactly that.
 - **Quantization is the mobile lever**, and the cascade means it's applied where it pays: the big model is the one worth shrinking, and it's the one that isn't on the critical path.
 
-### Offline and caching
+### Offline And Caching
 
-1. **First visit** — app shell and the 4 MB screener arrive together. The screener is a bundled asset, not a fetch, so there's no separate model download and no cold-start network dependency.
+1. **First scan** — the app shell arrives on the first visit; the detection runtime and the ~4 MB screener follow as same-origin chunks when the first scan starts. The service worker caches all of it, so there is no model-hub download and nothing third-party on the critical path.
 2. **First borderline frame** — only now is the ViT requested, and only on mid/high tiers. A video that's obviously safe or obviously explicit never triggers it, so most scans cost zero extra bytes.
-3. **Every visit after** — weights come from the Cache API and the shell from the service worker, so detection runs with the radio off. (The service worker deliberately never evicts the model bucket, so a shell-cache version bump can't cost you an 84 MB re-download.)
+3. **Every scan after** — weights come from the Cache API and the shell from the service worker, so detection runs with the radio off. (The service worker deliberately never evicts the model bucket, so a shell-cache version bump can't cost you an 84 MB re-download.)
 
 ---
 
-## Tradeoffs and alternatives considered
+## Tradeoffs And Alternatives Considered
 
 | Approach | Accuracy | Cost on low-end hardware | Verdict |
 |---|---|---|---|
@@ -232,7 +230,7 @@ One build serves low-end and high-end hardware alike, degrading accuracy gracefu
 
 ---
 
-## Responding to a detection
+## Responding To A Detection
 
 **Recommended default for a child audience: blur + pause + a calm replacement card, with adult-gated dismissal.** On a flag the frame blurs within one animation tick (GPU-composited CSS filter, effectively free), playback pauses, and a non-alarming card covers the stage with a press-and-hold parent gate to continue. No scary iconography, no flash of content, no dead end.
 
@@ -268,7 +266,7 @@ const result = await runDetection(videoElement, config, deps, callbacks, signal)
 - `callbacks` — `onProgress` (phase, throughput, current timestamp) and `onFrame` (per-frame score for live UIs).
 - `signal` — an `AbortSignal`; cancellation is instant.
 
-It resolves to a `DetectionResult`, validated against the shared Zod schema. `contains_inappropriate_content` and `confidence` are the core verdict; every other field adds detail:
+It resolves to a `DetectionResult`, validated against the shared Zod schema. `contains_inappropriate_content` and `confidence` are the core verdict; every other field adds detail. The example shows the shape; its values are illustrative, not a measurement:
 
 ```jsonc
 {
@@ -292,17 +290,17 @@ The shape is defined once as a Zod schema in shared code, and the UI, the mobile
 - **No TanStack Query / Redux.** There is no server state anywhere in this product; the processing lifecycle is a local reducer state machine (`useDetectionEngine`). A server-cache library would be cargo culting.
 - **No auth / roles.** Nothing to protect: no accounts, no data leaves the device, no server exists.
 - **No chart library.** The score timeline is hand-rolled SVG; a charting dependency would dominate the bundle for one component.
-- **Tier 1 is bundled, not fetched.** The baseline detector requires zero network, ever.
+- **Tier 1 ships in the app's own build, not from a model hub.** The baseline detector needs nothing beyond the site's own origin, and nothing at all once cached.
 - **CORS failures are surfaced, not proxied.** A proxy would silently reintroduce the server the whole design exists to avoid.
 - **No test media in the repo.** Detection quality is verified against local test sets that are never committed.
 
-## Measured performance
+## Measured Performance
 
 Recorded from real hardware only. The in-app benchmark panel reports live measurements per scan and renders `—` for anything unmeasured. No cross-device figures are published yet; they will be added only once measured on real devices.
 
 Method: run the same clips through a pre-scan with default settings on each device and read the values from the benchmark panel, which measures them in-process (`performance.now()` per frame, `PerformanceObserver` for long tasks, `performance.memory` where available).
 
-## Limitations and edge cases
+## Limitations And Edge Cases
 
 - **CORS-restricted URLs** can't be analysed client-side, by design — no server proxy. File upload always works, and an in-engine deployment doesn't have the problem.
 - **DRM / EME streams** yield no readable frames to canvas. No client-side detector can inspect them; the extension detects the all-black case and reports it rather than declaring everything safe.
@@ -314,7 +312,7 @@ Method: run the same clips through a pre-scan with default settings on each devi
 - **Thresholds are reasoned, not fitted.** They follow from the score arithmetic and real test clips, but there is no labelled evaluation set, so this project cannot quote a precision/recall figure. That is the largest honest gap, and the replay harness exists so it can be closed with data rather than guesswork.
 - **Sustained processing on older hardware throttles thermally**, which is why the low tier samples at half rate rather than trying to keep up.
 
-## Path to production on mobile
+## Path To Production On Mobile
 
 1. **Same architecture, native runtimes.** The pipeline (sample → preprocess → cascade → aggregate) ports as-is; inference moves to ONNX Runtime Mobile / Core ML / NNAPI for a large throughput and battery improvement. `apps/mobile` already demonstrates this with on-device ONNX inference and no network access.
 2. **Evaluation before further tuning.** A labelled eval set with precision/recall curves per age band. This is the first thing to build, and it's what would turn the current reasoned thresholds into fitted ones.
@@ -325,7 +323,7 @@ Method: run the same clips through a pre-scan with default settings on each devi
 
 ---
 
-## Mobile app
+## Mobile App
 
 The Expo app runs the same `packages/core` pipeline with **native on-device ONNX inference** (quantized ViT bundled as an asset). It works in airplane mode.
 
@@ -351,7 +349,7 @@ For hot-reload development against the native module, build the `development` pr
 
 Mobile-specific tradeoffs: pre-scan only (no live guard), the platform thumbnailer is slower per frame than the browser's seek path, and the APK is large because the model ships inside it — production would fetch and cache on first run. Device tier comes from a live micro-benchmark of the actual model, since React Native has no `navigator` hints to consult.
 
-## Browser extension
+## Browser Extension
 
 Asking a user to upload a file is a demo affordance. The product shape is *guard whatever is already playing* — which is what `apps/extension` does: a Manifest V3 content script that finds every `<video>` in the top-level page of any http(s) site (players under 160 px are skipped), samples it, and blurs + pauses + explains on a detection. Same `@safeframe/core`, third consumer, unchanged.
 
@@ -379,7 +377,7 @@ Then in Chrome or Edge: `chrome://extensions` → enable **Developer mode** → 
 
 ---
 
-## CORS-readable test URLs
+## CORS-Readable Test URLs
 
 Client-side frame analysis needs `Access-Control-Allow-Origin` on the media response itself, or `canvas.getImageData()` throws. Each URL below was verified with a ranged `GET` returning HTTP 206 **and** `access-control-allow-origin: *` on the actual bytes. All are freely licensed Wikimedia Commons files served as 480p VP9/WebM.
 
@@ -423,5 +421,7 @@ To see the CORS explainer, paste an ordinary web *page* URL rather than a direct
 ---
 
 ## License
+
+Copyright (c) 2026 Kidus Abdula. All rights reserved. No license is granted to use, copy, modify or distribute this software without written permission; see [`LICENSE`](LICENSE).
 
 Model weights retain their upstream licenses (NSFWJS / `AdamCodd/vit-base-nsfw-detector`). Test media is never committed to this repository.

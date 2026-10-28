@@ -15,14 +15,20 @@
   --muted-foreground: oklch(0.5 0.02 255);
   --primary: oklch(0.55 0.19 262);
   --primary-foreground: oklch(0.99 0.005 250);
-  --accent: oklch(0.7 0.14 200);
-  --success: oklch(0.65 0.15 155);
+  /* The accent is also text (numbers in the verdict JSON, the tier-2 tooltip),
+     so it clears 4.5:1 on every light surface, muted included. */
+  --accent: oklch(0.5 0.1 200);
+  /* Status hues are dark enough to read as text at 4.5:1 on their own soft
+     tint; the tints keep the original, lighter hue. */
+  --success: oklch(0.5 0.13 155);
   --success-soft: oklch(0.65 0.15 155 / 0.12);
-  --warning: oklch(0.75 0.15 80);
+  --warning: oklch(0.5 0.12 70);
   --warning-soft: oklch(0.75 0.15 80 / 0.14);
-  --danger: oklch(0.6 0.21 25);
+  --danger: oklch(0.52 0.2 25);
   --danger-soft: oklch(0.6 0.21 25 / 0.12);
-  --ring: oklch(0.55 0.19 262 / 0.45);
+  /* Focus ring: solid, so it clears 3:1 against every surface (WCAG 2.2 focus appearance). */
+  --ring: oklch(0.5 0.2 262);
+  --selection: oklch(0.55 0.19 262 / 0.25);
   --chart-line: oklch(0.55 0.19 262);
   --chart-area: oklch(0.55 0.19 262 / 0.12);
   --chart-band: oklch(0.6 0.21 25 / 0.16);
@@ -46,9 +52,10 @@
   --success-soft: oklch(0.72 0.15 155 / 0.14);
   --warning: oklch(0.8 0.14 80);
   --warning-soft: oklch(0.8 0.14 80 / 0.15);
-  --danger: oklch(0.68 0.19 25);
+  --danger: oklch(0.72 0.17 25);
   --danger-soft: oklch(0.68 0.19 25 / 0.16);
-  --ring: oklch(0.68 0.17 262 / 0.5);
+  --ring: oklch(0.74 0.15 262);
+  --selection: oklch(0.68 0.17 262 / 0.35);
   --chart-line: oklch(0.68 0.17 262);
   --chart-area: oklch(0.68 0.17 262 / 0.14);
   --chart-band: oklch(0.68 0.19 25 / 0.2);
@@ -127,5 +134,72 @@ body {
 }
 
 ::selection {
-  background: var(--ring);
+  background: var(--selection);
+}
+
+/* Every interactive element gets a visible keyboard focus ring, including
+   ones that do not set their own focus-visible utilities. */
+@layer base {
+  :where(a[href], button, input, select, textarea, summary, video[controls], [tabindex]:not([tabindex="-1"]), [role="button"], [role="tab"], [role="slider"], [role="switch"], [role="radio"]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  /* The player fills a clipped, rounded frame, where a ring outside its edge is
+     cut off on every side, so its ring sits inside. The native controls inside
+     the player draw their own. */
+  video[controls]:focus-visible {
+    outline-offset: -2px;
+  }
+}
+
+/* Landing-page scroll reveal, with no JavaScript: a scroll-driven animation
+   where the browser supports one and motion is welcome; everywhere else the
+   content is simply visible. Content already in view at load is fully shown,
+   so it never holds back first paint. */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+
+/* The settings sheet slides in from the right edge. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+.sheet-in {
+  animation: sheet-in 0.25s ease-out;
+}
+
+/* Reduced motion: no shimmer loop, and transitions and keyframe animations
+   finish instantly. Framer Motion, used only in the detector's scan
+   workspace, follows the same preference through MotionConfig there. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

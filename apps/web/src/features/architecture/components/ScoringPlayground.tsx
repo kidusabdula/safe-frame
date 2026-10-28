@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   createAggregator,
   resolveConfig,
@@ -85,6 +85,7 @@ export function ScoringPlayground() {
   const [flagThreshold, setFlagThreshold] = useState(0.6);
   const [windowSize, setWindowSize] = useState(5);
   const [evidenceOn, setEvidenceOn] = useState(true);
+  const evidenceId = useId();
 
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0]!;
 
@@ -145,7 +146,12 @@ export function ScoringPlayground() {
         {scenario.hint}
       </p>
 
-      <div className="overflow-x-auto">
+      <div
+        className="overflow-x-auto"
+        tabIndex={0}
+        role="region"
+        aria-label="Scoring chart"
+      >
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="h-auto w-full min-w-[420px]"
@@ -296,27 +302,31 @@ export function ScoringPlayground() {
         </label>
       </div>
 
-      <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-surface p-3">
+      {/* A div, not a wrapping label: the info button must not sit inside the
+          checkbox's label, which may contain only its own control. */}
+      <div className="flex items-start gap-2.5 rounded-xl border border-border bg-surface p-3">
         <input
+          id={evidenceId}
           type="checkbox"
           checked={evidenceOn}
           onChange={(e) => setEvidenceOn(e.target.checked)}
-          className="mt-0.5 accent-current"
+          aria-describedby={`${evidenceId}-hint`}
+          className="mt-0.5 size-4 cursor-pointer accent-current"
         />
         <span className="text-xs leading-relaxed">
-          <span className="font-medium text-foreground">
+          <label htmlFor={evidenceId} className="cursor-pointer font-medium text-foreground">
             Sustained-evidence pass
-          </span>{" "}
+          </label>{" "}
           <InfoTip
             wide
             text="Flags a run of consecutive raw frames above the threshold even when smoothing keeps the averaged score below it. Uncheck to see the behaviour that produced a false negative on real footage."
           />
-          <span className="block text-muted-foreground">
+          <span id={`${evidenceId}-hint`} className="block text-muted-foreground">
             Turn this off with the <em>Short insert</em> scenario selected to see
             the false negative it was written to fix.
           </span>
         </span>
-      </label>
+      </div>
 
       {/* Live verdict */}
       <div

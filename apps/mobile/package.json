@@ -2,6 +2,7 @@
   "name": "@safeframe/mobile",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "main": "index.ts",
   "scripts": {
     "start": "expo start --dev-client",
