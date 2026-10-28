@@ -422,4 +422,6 @@ To see the CORS explainer, paste an ordinary web *page* URL rather than a direct
 
 ## License
 
+Copyright (c) 2026 Kidus Abdula. All rights reserved. No license is granted to use, copy, modify or distribute this software without written permission; see [`LICENSE`](LICENSE).
+
 Model weights retain their upstream licenses (NSFWJS / `AdamCodd/vit-base-nsfw-detector`). Test media is never committed to this repository.

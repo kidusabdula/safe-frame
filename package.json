@@ -1,6 +1,7 @@
 {
   "name": "safeframe",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "description": "Fully client-side video content detection — no server, no external inference.",
   "scripts": {

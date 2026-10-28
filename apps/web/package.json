@@ -2,6 +2,7 @@
   "name": "@safeframe/web",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "predev": "node scripts/copy-wasm.mjs",
     "dev": "next dev",
